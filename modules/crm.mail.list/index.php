@@ -1,8 +1,8 @@
 <?php
 // Charger l'autoload de Composer pour les dépendances externes
-require_once dirname(__DIR__).'/vendor/autoload.php';
+require_once dirname(__DIR__,2).'/vendor/autoload.php';
 
-$componentPath = dirname(__DIR__).'/modules/crm.mail.list/component.php';
+$componentPath = dirname(__DIR__,2).'/modules/crm.mail.list/component.php';
 
 // Vérifier si le fichier existe
 if (!file_exists($componentPath)) {
@@ -21,8 +21,8 @@ $NSContactMailActivity
     ->checkRequiredScopes()
     ->setItemsPerPage($itemsPerPage)
     ->setCurrentPage($currentPage)
-    ->getContactMailActivities()
-    ->renderMailActivitiesList();
+    ->getActivities()
+    ->renderActivitiesList();
 
 // Afficher les activités pour débogage
 ?>
