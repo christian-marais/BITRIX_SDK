@@ -31,10 +31,10 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
                                 <label for="itemsPerPage" class="my-2 mx-2 d-inline-block">Rendez-vous par page :</label>
-                                <select id="itemsPerPage" class="form-select form-select-sm" style="width: auto;">
+                                <select id="itemsPerPage" class="form-select form-select-sm" style="width: auto;" onchange="window.location.href='?itemsPerPage=' + this.value">
                                     <?php 
-                                    $pageSizes = [10, 25, 50, 100];
-                                    $currentItemsPerPage = $NSContactMailActivityCollection->pagination['itemsPerPage'];
+                                    $pageSizes = [1,10, 25, 50, 100];
+                                    $currentItemsPerPage = $activityCollection->pagination['itemsPerPage'];
                                     foreach ($pageSizes as $size): 
                                     ?>
                                         <option value="<?php echo $size; ?>" <?php echo ($size == $currentItemsPerPage) ? 'selected' : ''; ?>>
@@ -66,7 +66,12 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($activities as $activity): ?>
+                                    <?php 
+                                    $count = 0;
+                                    foreach ($activities as $activity): 
+                                        if ($count >= $activityCollection->pagination['itemsPerPage']) break;
+                                        $count++;
+                                    ?>
                                     <tr>
                                         <td class="text-center">
                                             <div class="form-check form-switch">
@@ -177,66 +182,38 @@
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- Pagination -->
+                        <div class="d-flex justify-content-between align-items-center p-3">
+                            <div class="text-muted">
+                                Affichage de <?php echo (($activityCollection->pagination['currentPage'] - 1) * $activityCollection->pagination['itemsPerPage'] + 1); ?> 
+                                à <?php echo min($activityCollection->pagination['currentPage'] * $activityCollection->pagination['itemsPerPage'], $activityCollection->pagination['total']); ?> 
+                                sur <?php echo $activityCollection->pagination['total']; ?> rendez-vous
+                            </div>
+                            <nav aria-label="Navigation des pages">
+                                <ul class="pagination mb-0">
+                                    <li class="page-item <?php echo $activityCollection->pagination['currentPage'] <= 1 ? 'disabled' : ''; ?>">
+                                        <a class="page-link" href="?page=<?php echo $activityCollection->pagination['currentPage'] - 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Précédent">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    <?php for($i = 1; $i <= max(1, $activityCollection->pagination['totalPages']); $i++): ?>
+                                        <li class="page-item <?php echo $activityCollection->pagination['currentPage'] == $i ? 'active' : ''; ?>">
+                                            <a class="page-link" href="?page=<?php echo $i; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>"><?php echo $i; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+                                    <li class="page-item <?php echo $activityCollection->pagination['currentPage'] >= $activityCollection->pagination['totalPages'] ? 'disabled' : ''; ?>">
+                                        <a class="page-link" href="?page=<?php echo $activityCollection->pagination['currentPage'] + 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Suivant">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                     <div class="card-footer d-flex justify-content-between align-items-center">
                         <div class="text-muted mb-2">
-                            Total des activités : <?php echo $NSContactMailActivityCollection->pagination['total']; ?> 
-                            (Page <?php echo $NSContactMailActivityCollection->pagination['currentPage']; ?> 
-                            sur <?php echo $NSContactMailActivityCollection->pagination['totalPages']; ?>)
                         </div>
-                        <nav aria-label="Navigation des activités">
-                            <ul class="pagination mb-0">
-                                <?php 
-                                $pagination = $NSContactMailActivityCollection->pagination;
-                                $currentPage = $pagination['currentPage'];
-                                $totalPages = $pagination['totalPages'];
-                                ?>
-                                    
-                                <!-- Bouton Précédent -->
-                                <li class="page-item <?php echo ($currentPage <= 1) ? 'disabled' : ''; ?>">
-                                    <a class="page-link" href="#" data-page="<?php echo max(1, $currentPage - 1); ?>">
-                                        <span aria-hidden="true">&laquo;</span>
-                                    </a>
-                                </li>
-
-                                <?php 
-                                // Logique pour afficher les numéros de page
-                                $range = 2; // Nombre de pages à afficher de chaque côté de la page courante
-                                $start = max(1, $currentPage - $range);
-                                $end = min($totalPages, $currentPage + $range);
-
-                                // Afficher "..." si nécessaire
-                                if ($start > 1) {
-                                    echo '<li class="page-item"><a class="page-link" href="#" data-page="1">1</a></li>';
-                                    if ($start > 2) {
-                                        echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                                    }
-                                }
-
-                                // Afficher les pages
-                                for ($page = $start; $page <= $end; $page++) {
-                                    echo '<li class="page-item ' . ($page == $currentPage ? 'active' : '') . '">';
-                                    echo '<a class="page-link" href="#" data-page="' . $page . '">' . $page . '</a>';
-                                    echo '</li>';
-                                }
-
-                                // Afficher "..." à droite si nécessaire
-                                if ($end < $totalPages) {
-                                    if ($end < $totalPages - 1) {
-                                        echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                                    }
-                                    echo '<li class="page-item"><a class="page-link" href="#" data-page="' . $totalPages . '">' . $totalPages . '</a></li>';
-                                }
-                                ?>
-
-                                    <!-- Bouton Suivant -->
-                                <li class="page-item <?php echo ($currentPage >= $totalPages) ? 'disabled' : ''; ?>">
-                                    <a class="page-link" href="#" data-page="<?php echo min($totalPages, $currentPage + 1); ?>">
-                                        <span aria-hidden="true">&raquo;</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
                     </div>
                 </div>
             </div>

@@ -18,6 +18,14 @@ abstract class CrmActivity {
     public function __construct() {
         $this->activityCollection = new \stdClass();
 
+        // Initialiser la pagination depuis les paramètres GET
+        if (isset($_GET['itemsPerPage'])) {
+            $this->setItemsPerPage($_GET['itemsPerPage']);
+        }
+        if (isset($_GET['page'])) {
+            $this->setCurrentPage($_GET['page']);
+        }
+
         require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
         $this->B24 = ServiceBuilderFactory::createServiceBuilderFromWebhook(
             'https://bitrix24demoec.ns2b.fr/rest/12/2neihcmydm0tpxux/'
@@ -45,13 +53,13 @@ abstract class CrmActivity {
         return array_diff($this->requiredScopes, $this->currentScope);
     }
 
-    public function setItemsPerPage($count) {
-        $this->itemsPerPage = max(1, intval($count));
+    public function setItemsPerPage($value) {
+        $this->itemsPerPage = max(1, intval($value));
         return $this;
     }
 
-    public function setCurrentPage($page) {
-        $this->currentPage = max(1, intval($page));
+    public function setCurrentPage($value) {
+        $this->currentPage = max(1, intval($value));
         return $this;
     }
 

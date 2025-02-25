@@ -37,14 +37,7 @@ function showAlert(message, type = 'info') {
 
 
 
-// Appliquer la fonction sur la description dans le modal
-function updateModalDescriptions() {
-    document.querySelectorAll('.description-section').forEach(section => {
-        const rawHtml = section.innerHTML;
-        const cleanText = cleanMailBody(rawHtml);
-        section.textContent = cleanText;
-    });
-}
+
 
 // Initialisation des sélecteurs multi-choix
 function initializeSelectors() {
@@ -171,29 +164,39 @@ function managePagination() {
 
 // Fonction pour exporter les activités sélectionnées
 function exportSelected() {
-    const selectedActivities = Array.from(document.querySelectorAll('#activitiesTable tbody tr input[type="checkbox"]:checked'));
+
+    // Event listener pour le bouton d'export
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', ()=>{
+            const selectedCheckboxes = document.querySelectorAll('#activitiesTable tbody tr input[type="checkbox"]:checked');
     
-    if (selectedActivities.length === 0) {
-        showAlert('Aucune activité sélectionnée pour l\'exportation.', 'warning');
-        return;
+            if (!selectedCheckboxes.length) {
+                showAlert('Aucune activité sélectionnée pour l\'exportation.', 'warning');
+                return; // Empêche l'ouverture de la boîte de dialogue d'enregistrement
+            }
+        
+            // Création du tableau de données pour l'export
+            const data = Array.from(selectedCheckboxes).map(checkbox => {
+                const row = checkbox.closest('tr');
+                return {
+                    'ID': row.querySelector('td[id^="activityID_"]').textContent,
+                    'Subject': row.querySelector('td[id^="activitySubject_"]').textContent,
+                    'Responsible': row.querySelector('td[id^="activityResponsible_"]').textContent,
+                    'CreatedDate': row.querySelector('td[id^="activityCreatedDate_"]').textContent,
+                    'UpdatedDate': row.querySelector('td[id^="activityUpdatedDate_"]').textContent
+                };
+            });
+            
+            // Export en Excel
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Activités");
+            XLSX.writeFile(wb, "activites_export.xlsx");
+        });
     }
 
-    // Création du tableau de données pour l'export
-    const data = selectedActivities.map(checkbox => {
-        const row = checkbox.closest('tr');
-        return {
-            'ID': row.querySelector('td:nth-child(2)').textContent,
-            'Sujet': row.querySelector('td:nth-child(3)').textContent,
-            'Date': row.querySelector('td:nth-child(4)').textContent,
-            'Responsable': row.querySelector('td:nth-child(6)').textContent
-        };
-    });
-
-    // Export en Excel
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Activités");
-    XLSX.writeFile(wb, "activites_export.xlsx");
+    
 }
 
 // Fonction pour sélectionner toutes les activités filtrées
@@ -253,17 +256,11 @@ function resetFilters() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeSelectors();
     applyFilters();
-    exportData();
+    exportSelected();
     selectAllRows();
     initializeBitrix24();
     managePagination();
-
-    // Event listener pour le bouton d'export
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) {
-        exportBtn.addEventListener('click', exportSelected);
-    }
-
+    
     // Event listener pour la case à cocher "Tout sélectionner"
     const selectAllCheckbox = document.getElementById('selectAll');
     if (selectAllCheckbox) {
@@ -281,4 +278,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (resetBtn) {
         resetBtn.addEventListener('click', resetFilters);
     }
+
+    // Ajout de la classe bootstrap pour les cases à cocher
+    const checkboxes = document.querySelectorAll('#activitiesTable tbody tr input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.classList.add('form-check-input'); // Ajout de la classe bootstrap
+    });
 });

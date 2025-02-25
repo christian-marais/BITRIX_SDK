@@ -12,41 +12,45 @@ class NSContactEventActivity extends CrmActivity {
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
 
-            // Calculer l'offset pour la pagination
-            $start = ($this->currentPage - 1) * $this->itemsPerPage;
-            
-            $params = [
+            // Récupérer d'abord le nombre total d'activités
+            $countParams = [
                 'filter' => [
                     'PROVIDER_ID' => 'CRM_TODO',
                     'PROVIDER_TYPE_ID' => 'TODO',
                     'OWNER_ID' => 3,
                     'OWNER_TYPE_ID' => 1,
-                ],
+                ]
+            ];
+            
+            // Récupérer le nombre total
+            $totalCount = $this->B24->core->call('crm.activity.list', $countParams)
+                ->getResponseData()->getPagination()->getTotal();
+
+            // Calculer l'offset pour la pagination
+            $start = ($this->currentPage - 1) * $this->itemsPerPage;
+            
+            // Récupérer les activités pour la page courante avec la limite correcte
+            $params = [
+                'filter' => $countParams['filter'],
                 'select' => [
                     'ID', 'SUBJECT', 'CREATED', 'LAST_UPDATED', 
                     'START_TIME', 'END_TIME', 'COMPLETED', 
-                    'RESPONSIBLE_ID','DESCRIPTION','SETTINGS','LOCATION',
+                    'RESPONSIBLE_ID', 'DESCRIPTION', 'SETTINGS', 'LOCATION'
                 ],
                 'order' => ['CREATED' => 'DESC'],
                 'start' => $start,
-                'limit' => $this->itemsPerPage
+                'limit' => intval($this->itemsPerPage)
             ];
 
-            // Récupérer le nombre total d'activités
-            $totalCountParams = $params;
-            unset($totalCountParams['start'], $totalCountParams['limit']);
-            $totalCount = $this->B24->core->call('crm.activity.list', $totalCountParams)->getResponseData()->getPagination()->getTotal();//->getPagination()->getNextItem();
-           
-            // Récupérer les activités pour la page courante
             $result = $this->B24->core->call('crm.activity.list', $params)
                 ->getResponseData()->getResult();
-              
+
             $this->activityCollection->activities = $result;
             $this->activityCollection->pagination = [
                 'total' => $totalCount,
-                'itemsPerPage' => $this->itemsPerPage,
-                'currentPage' => $this->currentPage,
-                'totalPages' => ceil($totalCount / $this->itemsPerPage)
+                'itemsPerPage' => intval($this->itemsPerPage),
+                'currentPage' => intval($this->currentPage),
+                'totalPages' => max(1, ceil($totalCount / $this->itemsPerPage))
             ];
             
         } catch (Exception $e) {
