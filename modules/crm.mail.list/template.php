@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liste des Activités Mail</title>
+    <title>Boîte Mail</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-    <link href="../../base/assets/css/style.php?lang=en" rel="stylesheet" type="text/css" media="all" />
+    <link href="<?=dirname(__DIR__,2)?>/base/assets/css/style.php?lang=en" rel="stylesheet" type="text/css" media="all" />
 </head>
 <body>
     <div class="container-fluid px-4 py-4">
@@ -59,7 +59,7 @@
                                         </th>
                                         <th>ID</th>
                                         <th>Sujet</th>
-                                        <th>Date de Création</th>
+                                        <th>Date de Réception</th>
                                         <th>Dernière Mise à Jour</th>
                                         <th>Responsable</th>
                                         <th>Statut</th>
@@ -90,10 +90,10 @@
                                         <td data-id="<?php echo $activity['RESPONSIBLE_ID']; ?>" id="activityResponsible_<?php echo $activity['ID']; ?>"><?php echo htmlspecialchars(($activity["responsible"]["LAST_NAME"]??'').' '.($activity["responsible"]["NAME"]??$activity['RESPONSIBLE_ID'])); ?></td>
                                         <td>
                                             <?php 
-                                            $status = $activity['COMPLETED'] === 'Y' ? 
+                                            $completed = $activity['COMPLETED'] === 'Y' ? 
                                                 '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Terminé</span>' : 
                                                 '<span class="badge bg-warning"><i class="bi bi-clock me-1"></i>En cours</span>'; 
-                                            echo $status; 
+                                            echo $completed; 
                                             ?>
                                         </td>
                                         <td class="text-center">
@@ -124,7 +124,7 @@
                                                                 </div>
                                                                 <div class="card-body">
                                                                     <p><strong>Sujet :</strong> <?php echo htmlspecialchars($activity['SUBJECT']); ?></p>
-                                                                    <p><strong>Date de création :</strong> <?php echo date('d/m/Y H:i', strtotime($activity['CREATED'])); ?></p>
+                                                                    <p><strong>Date de Réception :</strong> <?php echo date('d/m/Y H:i', strtotime($activity['CREATED'])); ?></p>
                                                                     <p><strong>Dernière mise à jour :</strong> <?php echo date('d/m/Y H:i', strtotime($activity['LAST_UPDATED'])); ?></p>
                                                                     <p><strong>Début :</strong> <?php echo date('d/m/Y H:i', strtotime($activity['START_TIME'])); ?></p>
                                                                     <p><strong>Fin :</strong> <?php echo date('d/m/Y H:i', strtotime($activity['END_TIME'])); ?></p>
@@ -224,7 +224,7 @@
                     <form id="filterForm">
                         <div class="mb-3">
                             <label class="form-label">Statut</label>
-                            <select id="statusFilter" multiple>
+                            <select id="completedFilter" multiple>
                                 <option value="Y">Terminé</option>
                                 <option value="N">En cours</option>
                             </select>
@@ -251,6 +251,10 @@
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Objet</label>
+                            <textarea rows="1" type="text" class="form-control" id="subjectFilter" placeholder="Tapez votre recherche..."></textarea>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -271,6 +275,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
 
     <script type="text/javascript" src="./../base/assets/js/main.js"></script>
+    <script type="text/javascript" src="./assets/js/mailList.js"></script>
     <!-- Ajout du code pour les pop-ups d'alerte -->
     <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
         <div class="modal-dialog">
