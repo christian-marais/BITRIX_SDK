@@ -3,7 +3,7 @@ namespace NS2B;
 
 use Bitrix24\SDK\Services\ServiceBuilderFactory;
 
-abstract class CrmActivity {
+abstract class CrmActivity extends ServiceBuilderFactory{
     protected $B24 = null;
     protected $activityCollection = null;
     protected $itemsPerPage = 10;
@@ -27,9 +27,10 @@ abstract class CrmActivity {
         }
 
         require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
-        $this->B24 = ServiceBuilderFactory::createServiceBuilderFromWebhook(
+        $this->B24 = self::createServiceBuilderFromWebhook(
             'https://bitrix24demoec.ns2b.fr/rest/12/2neihcmydm0tpxux/'
         );
+
         $this->currentScope = $this->B24?->core?->call('scope')->getResponseData()->getResult();
     }
 

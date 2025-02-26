@@ -90,10 +90,10 @@
                                         <td data-id="<?php echo $activity['RESPONSIBLE_ID']; ?>" id="activityResponsible_<?php echo $activity['ID']; ?>"><?php echo htmlspecialchars(($activity["responsible"]["LAST_NAME"]??'').' '.($activity["responsible"]["NAME"]??$activity['RESPONSIBLE_ID'])); ?></td>
                                         <td>
                                             <?php 
-                                            $status = $activity['COMPLETED'] === 'Y' ? 
+                                            $completed = $activity['COMPLETED'] === 'Y' ? 
                                                 '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Terminé</span>' : 
                                                 '<span class="badge bg-warning"><i class="bi bi-clock me-1"></i>En cours</span>'; 
-                                            echo $status; 
+                                            echo $completed; 
                                             ?>
                                         </td>
                                         <td class="text-center">
@@ -224,7 +224,7 @@
                     <form id="filterForm">
                         <div class="mb-3">
                             <label class="form-label">Statut</label>
-                            <select id="statusFilter" multiple>
+                            <select id="completedFilter" multiple>
                                 <option value="Y">Terminé</option>
                                 <option value="N">En cours</option>
                             </select>
@@ -271,6 +271,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
 
     <script type="text/javascript" src="./../base/assets/js/main.js"></script>
+    <script type="text/javascript" src="./assets/js/mailList.js"></script>
     <!-- Ajout du code pour les pop-ups d'alerte -->
     <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
         <div class="modal-dialog">
