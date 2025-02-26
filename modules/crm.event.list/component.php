@@ -8,11 +8,14 @@ class NSContactEventActivity extends CrmActivity {
     
     public function getActivities() {
         try {
-            if(!$this->hasScope('crm')){
+            if(!$this->hasScope('crm'))
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
-            }
+            
+            $arParams = [
+               'completed','responsible','type','priority','location','collaborators','subject'
+            ];
 
-            // Récupérer d'abord le nombre total d'activités
+            // Construire le tableau de filtres
             $countParams = [
                 'filter' => [
                     'PROVIDER_ID' => 'CRM_TODO',
@@ -22,12 +25,34 @@ class NSContactEventActivity extends CrmActivity {
                 ]
             ];
             
-            // Récupérer le nombre total
-            $totalCount = $this->B24->core->call('crm.activity.list', $countParams)
-                ->getResponseData()->getPagination()->getTotal();
+            // Ajouter les filtres dynamiques
 
+            foreach ($arParams as $param) {
+                if (isset($_GET[$param])) {
+                    $$param = isset($_GET[$param])? htmlentities($_GET[$param]): [];
+                    (!empty($$param) && ($param=='type' || $param=='responsible'))?
+                    $countParams['filter'][strtoupper($param).'_ID'] = $$param: 
+                    (($param=='subject'&& !empty($_GET[$param]))?
+                        $countParams['filter']['%'.strtoupper($param)]=$_GET[$param]:
+                        $countParams['filter'][strtoupper($param)]= $$param);
+                    unset($countParams['filter']['SUBJECT']);
+                }
+          
+            }
+           
+            $startDate = isset($_GET['startDate']) ?htmlentities($_GET['startDate']) : null;
+            $startDate?$countParams['filter']['>=CREATED'] = $startDate:"";
+            $endDate = isset($_GET['endDate']) ? htmlentities($_GET['endDate']) : null;
+            $endDate?$countParams['filter']['<=CREATED'] = $endDate:"";
+            // Récupérer le nombre total
+            $totalCount = $this->B24->core
+                ->call('crm.activity.list', $countParams)
+                ->getResponseData()
+                ->getPagination()
+                ->getTotal();
+            
             // Calculer l'offset pour la pagination
-            $start = ($this->currentPage - 1) * $this->itemsPerPage;
+            $this->start = ($this->currentPage-1) * $this->itemsPerPage;
             
             // Récupérer les activités pour la page courante avec la limite correcte
             $params = [
@@ -38,12 +63,24 @@ class NSContactEventActivity extends CrmActivity {
                     'RESPONSIBLE_ID', 'DESCRIPTION', 'SETTINGS', 'LOCATION'
                 ],
                 'order' => ['CREATED' => 'DESC'],
-                'start' => $start,
-                'limit' => intval($this->itemsPerPage)
+                'start' =>0,
+                'limit' => $this->itemsPerPage
             ];
 
-            $result = $this->B24->core->call('crm.activity.list', $params)
-                ->getResponseData()->getResult();
+            // echo'<pre>';
+            // var_dump($params);echo'</pre>';die();
+            do{
+                $response = $this->B24
+                    ->core
+                    ->call('crm.activity.list', $params)
+                    ->getResponseData();
+                $result = array_merge($result??[],$response
+                    ->getResult());
+            }while($params['start']=$response
+                    ->getPagination()
+                    ->getNextItem()
+            );
+            
 
             $this->activityCollection->activities = $result;
             $this->activityCollection->pagination = [
@@ -70,26 +107,28 @@ class NSContactEventActivity extends CrmActivity {
     
 
     public function renderActivitiesList() {
-            $activities = $this->activityCollection->activities;
+            $activityCollection= $this->activityCollection;
             $responsibles=[];
-          
-            foreach($activities as $key => $activity){
+            $coworkers=[];
+            foreach($activityCollection->activities as $key => $activity){
                 
                 if(isset($activity['SETTINGS']['USERS'])){
                     foreach($activity['SETTINGS']['USERS'] as $collaboratorId){
-                        $this->getResponsible($collaboratorId);
-                        $activities[$key]['COWORKERS'][]=$this->activityCollection->responsible[0];
+                        if($collaboratorId!==(int)$activity['RESPONSIBLE_ID']){
+                            $this->getResponsible($collaboratorId);
+                            $activityCollection->activities[$key]['COWORKERS'][]=$this->activityCollection->responsible[0];
+                            $coworkers[$collaboratorId]=$this->activityCollection->responsible[0];
+                        }
                     }
                 }
+                
                 $this->getResponsible($activity['RESPONSIBLE_ID']);
                 unset($activities[$key]['SETTINGS']);
-                $activities[$key]['responsible']=$this->activityCollection->responsible[0]??null;
-                $responsibles[]=$this->activityCollection->responsible[0]??null;
+                $activityCollection->activities[$key]['responsible']=$this->activityCollection->responsible[0]??null;
+                $responsibles[$activity['RESPONSIBLE_ID']]=$this->activityCollection->responsible[0]??null;
             }
-            
-
+            $activities=array_slice($activityCollection->activities,$this->start,($this->start+$this->itemsPerPage));
             $errorMessages=$this->errorMessages;
-            $activityCollection= $this->activityCollection;
             include dirname(__FILE__) . '/template.php';
     }
 }

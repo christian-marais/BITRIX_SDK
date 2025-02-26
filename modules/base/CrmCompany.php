@@ -2,9 +2,10 @@
 namespace NS2B;
 
 require_once __DIR__ . '/base.php';
-abstract class CrmActivity extends NsBase{
+abstract class CrmCompany extends NsBase{
     protected $B24 = null;
-    protected $activityCollection = null;
+    protected $entityTypeId = '4';
+    protected $companyCollection = null;
     protected $itemsPerPage = 10;
     protected $currentPage = 1;
     protected $currentScope = [];
@@ -14,12 +15,9 @@ abstract class CrmActivity extends NsBase{
         'user'
     ];
 
-    
-
-    private static function getContactId() {
-       return self::getContextId();
+    private static function getCompanyId() {
+        return self::getContextId();
     }
-
 
     public function getResponsible($userId){
         try{
@@ -34,10 +32,15 @@ abstract class CrmActivity extends NsBase{
         }
         return $this;
     }
+
     protected function getCollection() {
-        return $this->activityCollection;
+        return $this->companyCollection;
     }
 
-    abstract public function getActivities();
-    abstract public function renderActivitiesList();
+    protected function setCollection($value) {
+        $this->companyCollection = $value;
+    }
+
+    abstract public function getCurrentCompany();
+    abstract public function renderCurrentCompany();
 }

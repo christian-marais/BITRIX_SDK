@@ -24,12 +24,19 @@ class NSContactMailActivity extends CrmActivity{
                     'PROVIDER_TYPE_ID' => 'EMAIL',
                     'OWNER_ID' => 3,
                     'OWNER_TYPE_ID' => 1,
+                    
                 ]
             ];
-            
+            $_GET['subject'] ? $countParams['filter']['%SUBJECT'] = htmlspecialchars($_GET['subject']) : '';
+            $_GET['startDate'] ? $countParams['filter']['>=START_TIME'] = htmlspecialchars($_GET['startDate']) : '';
+            $_GET['endDate'] ? $countParams['filter']['<=END_TIME'] = htmlspecialchars($_GET['endDate']) : '';
             // Récupérer le nombre total
-            $totalCount = $this->B24->core->call('crm.activity.list', $countParams)
-                ->getResponseData()->getPagination()->getTotal();
+            $totalCount = $this->B24
+                ->core
+                ->call('crm.activity.list', $countParams)
+                ->getResponseData()
+                ->getPagination()
+                ->getTotal();
 
             // Calculer l'offset pour la pagination
             $start = ($this->currentPage - 1) * $this->itemsPerPage;
@@ -47,11 +54,17 @@ class NSContactMailActivity extends CrmActivity{
                 'limit' => intval($this->itemsPerPage)
             ];
 
-            $result = $this->B24->core->call('crm.activity.list', $params)
-                ->getResponseData()->getResult();
+            $result = $this->B24
+                ->core
+                ->call('crm.activity.list', $params)
+                ->getResponseData()
+                ->getResult();
 
             $this->activityCollection->activities = $result;
             $this->activityCollection->pagination = [
+                'total' => $totalCount,
+                'itemsPerPage' => intval($this->itemsPerPage),
+                'currentPage' => intval($this->currentPage),
                 'total' => $totalCount,
                 'itemsPerPage' => intval($this->itemsPerPage),
                 'currentPage' => intval($this->currentPage),
