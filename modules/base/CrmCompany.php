@@ -14,6 +14,36 @@ abstract class CrmCompany extends NsBase{
         'crm',
         'user'
     ];
+    protected $fields=[
+        'siret'=>'UF_CRM_1713268514492',
+        'codePostale'=>'',
+        'commune'=>'',
+        'rue'=>'',
+        'ville'=>'',
+        'siren'=>'UF_CRM_1713268514493',
+        'nom'=>'',
+        'acitivite'=>'',
+        'naf'=>'',
+        'ca'=>'',
+        'zoneNS2B_enum'=>'',
+        'statut_enum'=>'',
+        'activite_enum'=>'',
+        'email'=>'',
+        'tel'=>'',
+        'famille_enum'=>'',
+        'nom_mention'=>'',
+        'modele_mention'=>'4',//societe,
+        'forme_juridique_mention'=>'',
+        'ca_mention'=>'',
+        'siret_mention'=>'',
+        'naf_mention'=>'',
+        'rcs_mention'=>'',
+        'tva_intracommunautaire_mention'=>'',
+        'date_clôture_mention'=>'',
+        'identifiant_association_mention'=>'',
+        'pappersUrl_mention'=>'UF_CRM_1740987515'
+    ];
+
 
     private static function getCompanyId() {
         return self::getContextId();

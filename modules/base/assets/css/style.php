@@ -30,6 +30,8 @@ body {
     padding: 15px;
     border-radius: 5px;
 }
+
+
 .btn-outline-primary {
     color: var(--primary-color);
     border-color: var(--primary-color);

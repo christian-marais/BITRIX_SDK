@@ -64,7 +64,8 @@
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "Bitrix24\\SDK\\": "src"
+                    "Bitrix24\\SDK\\": "src",
+                    "NS"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",

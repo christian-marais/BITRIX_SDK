@@ -3,7 +3,7 @@
 
 require_once dirname(__DIR__,2).'/vendor/autoload.php';
 
-$componentPath = dirname(__DIR__,2).'/modules/crm.company.pappers/component.php';
+$componentPath = str_replace("\\","/",dirname(__FILE__).'/component.php');
 
 // Vérifier si le fichier existe
 if (!file_exists($componentPath)) {
@@ -14,17 +14,31 @@ require_once($componentPath);
 
 $NSCompanyPappers = new NS2B\NSCompanyPappers();
 
-// Gestion des paramètres de pagination
-$itemsPerPage = isset($_GET['itemsPerPage']) ? intval($_GET['itemsPerPage']) : 10;
-$currentPage = isset($_GET['page']) ? intval($_GET['page']) : 1;
+
+
+if (isset($_GET['siret'])) {
+    $siret = $_GET['siret'];
+    $companyData = $NSCompanyPappers->fetchCompanyData($siret);
+    if ($companyData) {
+        // Process and display the company data as needed
+        // This can be adapted to fit the existing structure of your application
+    }
+}
 
 $NSCompanyPappers
-    ->checkRequiredScopes()
-    ->setItemsPerPage($itemsPerPage)
-    ->setCurrentPage($currentPage)
-    ->getCurrentCompany()
+    ->setCustomSiret('92258711800014')
+    ->getCompanyFromAnnuaire()
+    ->getCompanyFromInsee()
     ->getCompanyRequisite()
-    ->redirectToPappers();
+    ->getCompanyFromBodacc()
+    ->getBodaccAlerts()
+    ->redirectToPappers()
+    ->renderCurrentCompany();
 
 // Afficher les activités pour débogage
+
+//TO DO LIST 
+// get company name from insee from siret
+// replace  blank space, underscore, ' by - -<siren>
+
 ?>
