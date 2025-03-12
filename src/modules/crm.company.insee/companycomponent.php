@@ -1,14 +1,12 @@
 <?php
 declare(strict_types=1);
-namespace NS2B;
+namespace NS2B\SDK\MODULES\CRM\COMPANY\INSEE;
 use \Exception;
 use \DateTime;
 use Symfony\Component\HttpClient\HttpClient;
-require_once dirname(__DIR__, 2) . '/modules/base/CrmCompany.php';
-// require_once($_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php");
+use NS2B\SDK\MODULES\BASE\CrmCompany;
 
-
-class NSCompanyPappers extends CrmCompany{
+class CompanyComponent extends CrmCompany{
     protected $companyCollection;
     private $inseeKey="8e5b6d15-6a7f-4dd0-9b6d-156a7f4dd0db";
     private $HttpOption = [
@@ -20,17 +18,8 @@ class NSCompanyPappers extends CrmCompany{
         parent::__construct();
         $this->companyCollection = new \stdClass();
         $this
-            ->setAction()
-            ->checkRequiredScopes()
-            ->setItemsPerPage($itemsPerPage)
-            ->setCurrentPage($currentPage)
             ->getCurrentCompany()
             ->setCompanySourcesUrl();
-    }
-
-    public function setAction(){
-        $this->action[]=htmlspecialchars(strip_tags($_GET['action']??''));
-        return $this;
     }
 
     public function getCurrentCompany() {
@@ -182,11 +171,11 @@ class NSCompanyPappers extends CrmCompany{
         try {
             $client = HttpClient::create($this->HttpOption);
             $response = $client->request('GET', 'https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q='.$this->companyCollection->currentCompany["SIREN"]);
-            
             if ($response->getStatusCode() != 200) {
                 throw new Exception('Erreur lors de la récupération du bodacc');
             }
             $this->companyCollection->currentCompany['bodacc']=json_decode($response->getContent())->records;
+            
             $this->setBodaccCustomRecord();
         } catch (Exception $e) {
             $this->log($e, $e->getMessage());
@@ -197,24 +186,24 @@ class NSCompanyPappers extends CrmCompany{
         try{
             if($records=$this->companyCollection->currentCompany['bodacc']){
                 foreach ($records as $record) {
+                    $jugement=json_decode($record->fields->jugement??'{}');
                     $this->companyCollection->currentCompany['bodaccRecords'][]=[
                         'dateparution'=>$record->fields->dateparution,
                         'siren'=>json_decode($record->fields->listepersonnes??'{}')?->numeroIdentifiant??'',
-                        'datejugement'=>$record->fields->date??'',
+                        'datejugement'=>$jugement?->date??'',
                         'numeroAnnonce'=>$record->fields->numeroAnnonce??'',
                         'registre'=>substr($record->fields->registre??'',0,strpos($record->fields->registre??'',',')??0),
-                        'jugement'=>json_decode($record->fields->jugement??'{}')?->nature,
+                        'jugement'=>$jugement?->nature,
                         'commercant'=>$record->fields->commercant??'',
                         'tribunal'=>$record->fields->tribunal??'',
                         'url_complete'=>$record->fields->url_complete??'',
                         'familleavis_lib'=>$record->fields->familleavis_lib??'',
-                        'description'=>json_decode($record->fields->jugement??'{}')?->complementJugement??'',
+                        'description'=>$jugement?->complementJugement??'',
                         'type'=>$record->fields->typeavis_lib??'',
                         'ville'=>$record->fields->ville??'',
                     ];
                 }
-            }
-            // var_dump($this->companyCollection->currentCompany['bodaccRecords']);die();
+            }   
         }catch(Exception $e){
             $this->log($e, $e->getMessage());
         }    
@@ -242,17 +231,68 @@ class NSCompanyPappers extends CrmCompany{
         return $this;
     }
 
+   
     public function getCompanyFromAnnuaire(){
         try {
             $client = HttpClient::create($this->HttpOption);
-            $response = $client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.$this->companyCollection->currentCompany["SIRET"].'&page=1&per_page=1');
+            $response = $client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.$this->companyCollection->currentCompany["SIRET"].'&page=1&per_page=20');
           
             if ($response->getStatusCode() != 200) {
                 throw new Exception('Erreur lors de la récupération de l\'annuaire entreprise');
             }
-            $this->companyCollection->currentCompany['annuaire']=json_decode($response->getContent())->results[0];
-            $this->companyCollection->currentCompany['legalName']=$this->companyCollection->currentCompany['annuaire']?->nom_complet;
+            $annuaire=json_decode($response->getContent())->results[0];
+            $this->companyCollection->currentCompany['legalName']=$annuaire?->nom_complet;
             
+            if($dirigeant=$annuaire?->dirigeants[0])
+                $annuaire->dirigeant=$dirigeant->nom.' '.$dirigeant->prenoms;
+            
+            $annuaire->matching_etablissements[]=$annuaire->siege;
+            foreach($annuaire->matching_etablissements as $key =>$etablissement){
+                $annuaire->matching_etablissements[$key]->nom_complet??=$annuaire->nom_complet;
+            }
+            if($annuaire->nombre_etablissements>1){
+                
+                $newResponse = json_decode($client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.($dirigeant??$annuaire->nom_complet).'&page=1&per_page=20')->getContent());
+                foreach($newResponse->results as $society){
+                    if($society->siren==$this->companyCollection->currentCompany["SIREN"]){ 
+                        $sirets=array_map(function($etablissement){
+                            return $etablissement->siret;
+                        },$annuaire->matching_etablissements);
+                        foreach($society->matching_etablissements as $etablissement){
+                            if(!empty($etablissement->siret) && !in_array($etablissement->siret,$sirets)){
+                                $etablissement->nom_complet=$society->nom_complet;
+                                $annuaire->matching_etablissements[]=$etablissement;
+                                
+                            }
+                        }
+                      
+                    }
+                }
+                
+                if($newResponse->total_pages>1){
+                    $goNext=true;
+                    do{
+                        $newResponse->page++;
+                        $newResponse = json_decode($client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.($dirigeant??$annuaire->nom_complet).'&page='.($newResponse->page).'&per_page=20')->getContent());
+                        foreach($newResponse->results as $society){
+                            if($society->siren==$this->companyCollection->currentCompany["SIREN"]){ 
+                                $sirets=array_map(function($etablissement){
+                                    return $etablissement->siret;
+                                },$annuaire->matching_etablissements);
+                                foreach($society->matching_etablissements as $etablissement){
+                                    if($etablissement->siret!==$this->companyCollection->currentCompany["SIRET"] && !in_array($etablissement->siret,$sirets)){
+                                        $etablissement->nom_complet=$society->nom_complet;
+                                        $annuaire->matching_etablissements[]=$etablissement;
+                                    }
+                                }
+                               $goNext=false;
+                            }
+                       }
+                    }while($newResponse->page<$newResponse->total_pages && $goNext);
+                }
+                
+            }
+            $this->companyCollection->currentCompany['annuaire']=$annuaire;
         } catch (Exception $e) {
             $this->log($e, $e->getMessage());
         }
@@ -274,7 +314,6 @@ class NSCompanyPappers extends CrmCompany{
                 throw new Exception('Erreur lors de la récupération des annonces bodacc entreprise');
             }
             $results=json_decode($response->getContent())->results;
-            $this->dd($results);
             foreach($results as $alerte){
                 $personnes=json_decode($alerte->listepersonnes??'{}');
                 $jugement=json_decode($alerte->jugement??'{}');
@@ -306,7 +345,7 @@ class NSCompanyPappers extends CrmCompany{
         return $this;
     }
     public function setCustomSiret($siret=''){
-        $this->companyCollection->currentCompany["SIRET"] = $siret;
+        $this->companyCollection->currentCompany["SIRET"] = ($siret=str_replace(' ','',$siret));
         $this->companyCollection->currentCompany["SIREN"] =substr($siret, 0, 9);
         return $this;
     }

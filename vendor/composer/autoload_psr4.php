@@ -34,6 +34,7 @@ return array(
     'Psr\\EventDispatcher\\' => array($vendorDir . '/psr/event-dispatcher/src'),
     'Psr\\Container\\' => array($vendorDir . '/psr/container/src'),
     'Psr\\Clock\\' => array($vendorDir . '/psr/clock/src'),
+    'NS2B\\SDK\\' => array($baseDir . '/src'),
     'Money\\' => array($vendorDir . '/moneyphp/money/src'),
     'MoneyPHP\\Percentage\\' => array($vendorDir . '/mesilov/moneyphp-percentage/src'),
     'Giggsey\\Locale\\' => array($vendorDir . '/giggsey/locale/src'),

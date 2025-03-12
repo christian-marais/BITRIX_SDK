@@ -1,12 +1,11 @@
 <?php
 declare(strict_types=1);
-namespace NS2B;
+namespace NS2B\SDK\MODULES\CRM\MAIL\LIST;
 use \Exception;
-require_once dirname(__DIR__, 2) . '/modules/base/CrmActivity.php';
-// require_once($_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php");
+use NS2B\SDK\MODULES\BASE\CrmActivity;
 
 
-class NSContactMailActivity extends CrmActivity{
+class ContactActivityComponent extends CrmActivity{
 
     
 

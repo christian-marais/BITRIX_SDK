@@ -1,17 +1,22 @@
 <?php
-namespace NS2B;
+namespace NS2B\SDK\MODULES\BASE;
 
 use Bitrix24\SDK\Services\ServiceBuilderFactory;
 use Bitrix24\SDK\Core\Credentials\ApplicationProfile;
 use Symfony\Component\HttpFoundation\Request;
+use NS2B\SDK\DATABASE\Database;
 
-abstract class NsBase extends ServiceBuilderFactory{
+abstract class Base extends ServiceBuilderFactory{
    
     protected $action;
 
     public function __construct($webhook=null) {
        
         $this->activityCollection = new \stdClass();
+        $database = new Database();
+        if (!$database->dbExists()) {
+            $database->createDB();
+        }
 
         // Initialiser la pagination depuis les paramètres GET
         if (isset($_GET['itemsPerPage']))
@@ -19,6 +24,12 @@ abstract class NsBase extends ServiceBuilderFactory{
         
         if (isset($_GET['page']))
             $this->setCurrentPage($_GET['page']);
+
+        $this
+            ->setAction()
+            ->checkRequiredScopes()
+            ->setItemsPerPage($itemsPerPage)
+            ->setCurrentPage($currentPage);
         
         if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
             include_once($file);
@@ -42,7 +53,10 @@ abstract class NsBase extends ServiceBuilderFactory{
         $this->currentScope = $this->B24?->core?->call('scope')->getResponseData()->getResult();
     }
 
-
+    public function setAction(){
+        $this->action[]=htmlspecialchars(strip_tags($_GET['action']??''));
+        return $this;
+    }
     
     public function checkRequiredScopes() {
         $missingScopes = array_diff($this->requiredScopes, $this->currentScope);
@@ -62,7 +76,7 @@ abstract class NsBase extends ServiceBuilderFactory{
     }
 
     public function dd($value){
-        echo'<pre>';
+        echo'<pre style="color:white;background-color:black;">';
         var_dump($value);
         echo'</pre>';
         die();

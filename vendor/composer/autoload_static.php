@@ -18,6 +18,7 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
         '09f6b20656683369174dd6fa83b7e5fb' => __DIR__ . '/..' . '/symfony/polyfill-uuid/bootstrap.php',
         'b6b991a57620e2fb6b2f66f03fe9ddc2' => __DIR__ . '/..' . '/symfony/string/Resources/functions.php',
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
+        'fa763e67e5059a4fd0af86f1b3eb6c67' => __DIR__ . '/../..' . '/src/autoload.php',
     );
 
     public static $prefixLengthsPsr4 = array (
@@ -57,6 +58,10 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
             'Psr\\EventDispatcher\\' => 20,
             'Psr\\Container\\' => 14,
             'Psr\\Clock\\' => 10,
+        ),
+        'N' => 
+        array (
+            'NS2B\\SDK\\' => 9,
         ),
         'M' => 
         array (
@@ -198,6 +203,10 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
         'Psr\\Clock\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/clock/src',
+        ),
+        'NS2B\\SDK\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src',
         ),
         'Money\\' => 
         array (

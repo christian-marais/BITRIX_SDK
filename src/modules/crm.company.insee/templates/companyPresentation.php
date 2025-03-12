@@ -132,7 +132,7 @@
             <div class="info-header">
                 <h2 class="h5 mb-0">
                     <i class="bi bi-buildings me-2"></i>
-                    Établissements (<?php echo count($company["annuaire"]->matching_etablissements); ?>)
+                    Établissements (<?php echo count($company["annuaire"]->matching_etablissements).'/'. $company["annuaire"]->nombre_etablissements; ?>)
                 </h2>
             </div>
             <div class="info-content">
@@ -144,19 +144,24 @@
                                 <?php if ($etablissement->ancien_siege): ?>
                                     <span class="badge bg-warning">Ancien siège</span>
                                 <?php endif; ?>
+                                <span class="info-label mx-3"><?=$etablissement->siret?></span>
                             </h3>
                             <span class="badge <?php echo $etablissement->etat_administratif === 'A' ? 'bg-success' : 'bg-secondary'; ?>">
                                 <?php echo $etablissement->etat_administratif === 'A' ? 'En activité' : 'Fermé le '. htmlspecialchars($etablissement->date_fermeture); ?>
                             </span>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">SIRET</div>
-                            <div class="info-value"><?php echo htmlspecialchars($etablissement->siret); ?></div>
+                            <div class="info-label">Nom</div>
+                            <div class="info-value"><?php echo htmlspecialchars($etablissement->nom_complet); ?></div>
                             <button class="btn btn-primary">Ajouter l'entreprise</button>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Adresse</div>
-                            <div class="info-value"><?php echo htmlspecialchars($etablissement->adresse); ?></div>
+                            <div class="info-value"><?php echo htmlspecialchars($etablissement->adresse??$etablissement->geo_adresse); ?></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">NAF</div>
+                            <div class="info-value"><?php echo htmlspecialchars($etablissement->activite_principale); ?></div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Date de création</div>
@@ -174,15 +179,27 @@
             </div>
             <div class="info-content">
                 <?php foreach ($company["annuaire"]->dirigeants as $dirigeant): ?>
+                    <?php if($dirigeant->type_dirigeant=='personne morale'):?>
+                    <div class="info-row">
+                    <div class="info-label"><?php echo htmlspecialchars($dirigeant->qualite); ?></div>
+                        <div class="info-value">
+                            <?php echo htmlspecialchars($dirigeant->denomination).'<i class="bi bi-buildings mx-1"></i>'; ?>
+                            <br>
+                            <small class="text-muted">Siren : <?php echo htmlspecialchars($dirigeant->siren); ?></small>
+                        </div>
+                        <button class="btn btn-sm btn-primary" onclick="window.location.href=''">Ajouter l'entreprise</button>
+                    </div>
+                    <?php else: ?>
                     <div class="info-row">
                         <div class="info-label"><?php echo htmlspecialchars($dirigeant->qualite); ?></div>
                         <div class="info-value">
-                            <?php echo htmlspecialchars($dirigeant->prenoms . ' ' . $dirigeant->nom); ?>
+                            <?php echo htmlspecialchars($dirigeant->prenoms . ' ' . $dirigeant->nom).' <i class="bi bi-person mx-1"></i>'; ?>
                             <br>
                             <small class="text-muted">Né(e) en <?php echo htmlspecialchars($dirigeant->annee_de_naissance); ?></small>
                         </div>
                         <button class="btn btn-sm btn-primary" onclick="window.location.href=''">Ajouter le contact</button>
                     </div>
+                    <?php endif;?>
                 <?php endforeach; ?>
             </div>
         </div>

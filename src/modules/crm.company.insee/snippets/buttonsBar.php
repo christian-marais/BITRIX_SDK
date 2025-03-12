@@ -6,6 +6,9 @@
                 <button id="updateCompany" class="btn btn-primary mx-2" >
                     <i class="bi bi-file-text" style="margin-right: 5px;"></i>Importer l'Entreprise
                 </button>
+                <button id="alerteBodacc" class="btn btn-primary mx-2" >
+                    <i class="bi bi-file-text" style="margin-right: 5px;"></i>Alerte bodacc
+                </button>
                 <button id="bodacc" class="btn btn-primary mx-2" >
                     <i class="bi bi-file-text " ></i>BODACC
                 </button>

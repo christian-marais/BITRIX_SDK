@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
-namespace NS2B;
+namespace NS2B\SDK\MODULES\CRM\EVENT\LIST;
+use NS2B\SDK\MODULES\BASE\CrmActivity;
 use \Exception;
-require_once dirname(__DIR__, 2) . '/modules/base/CrmActivity.php';
 
-class NSContactEventActivity extends CrmActivity {
+class ContactActivityComponent extends CrmActivity {
     
     public function getActivities() {
         try {
