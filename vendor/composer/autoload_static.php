@@ -42,6 +42,7 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
             'Symfony\\Component\\Uid\\' => 22,
             'Symfony\\Component\\Translation\\' => 30,
             'Symfony\\Component\\String\\' => 25,
+            'Symfony\\Component\\Routing\\' => 26,
             'Symfony\\Component\\Mime\\' => 23,
             'Symfony\\Component\\HttpFoundation\\' => 33,
             'Symfony\\Component\\HttpClient\\' => 29,
@@ -61,6 +62,8 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
         ),
         'N' => 
         array (
+            'NS2B\\SDK\\MODULES\\' => 17,
+            'NS2B\\SDK\\DATABASE\\' => 18,
             'NS2B\\SDK\\' => 9,
         ),
         'M' => 
@@ -152,6 +155,10 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
         array (
             0 => __DIR__ . '/..' . '/symfony/string',
         ),
+        'Symfony\\Component\\Routing\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/symfony/routing',
+        ),
         'Symfony\\Component\\Mime\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/mime',
@@ -203,6 +210,14 @@ class ComposerStaticInite4e8fbb8b5ee188ea883e2ffa687b38d
         'Psr\\Clock\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/clock/src',
+        ),
+        'NS2B\\SDK\\MODULES\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src/modules',
+        ),
+        'NS2B\\SDK\\DATABASE\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src/database',
         ),
         'NS2B\\SDK\\' => 
         array (

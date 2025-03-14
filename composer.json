@@ -1,10 +1,14 @@
 {
   "require": {
-      "bitrix24/b24phpsdk": "^1.2"
+      "bitrix24/b24phpsdk": "^1.2",
+      "symfony/http-foundation": "^7.2",
+      "symfony/routing": "^7.2"
   },
-"autoload": {
+  "autoload": {
       "psr-4": {
-          "NS2B\\SDK\\": "src/"
+          "NS2B\\SDK\\": "src/",
+          "NS2B\\SDK\\MODULES\\": "src/modules/",
+          "NS2B\\SDK\\DATABASE\\": "src/database/"
       },
       "files": [
         "src/autoload.php"

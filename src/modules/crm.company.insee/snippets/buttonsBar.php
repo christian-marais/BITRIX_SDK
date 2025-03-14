@@ -32,10 +32,69 @@
                         <i class="bi bi-file-pdf" ></i>SOCIETE.COM
                     </a>
                 <?php endif;?>
+                <div class="btn-group" role="group" aria-label="Actions">
+                    <button type="button" class="btn btn-primary" id="saveWebhook">Sauvegarder le Webhook</button>
+                    <button type="button" class="btn btn-success" id="addCompany">Ajouter l'entreprise</button>
+                    <button type="button" class="btn btn-info" id="viewCompany" style="display: none;">Consulter l'entreprise</button>
+                </div>
             </div>
-            <?php else :?>  
+            <script>
+            $(document).ready(function() {
+                // Fonction pour sauvegarder le webhook
+                $('#saveWebhook').click(function() {
+                    const webhook = prompt("Veuillez entrer le webhook Bitrix :");
+                    if (webhook) {
+                        $.ajax({
+                            url: '/api/webhook/save',
+                            method: 'POST',
+                            data: { webhook: webhook },
+                            success: function(response) {
+                                alert('Webhook sauvegardé avec succès !');
+                                location.reload();
+                            },
+                            error: function() {
+                                alert('Erreur lors de la sauvegarde du webhook');
+                            }
+                        });
+                    }
+                });
+
+                // Fonction pour ajouter/consulter une entreprise
+                $('#addCompany').click(function() {
+                    const companyData = $(this).data('company');
+                    $.ajax({
+                        url: '/api/company/check',
+                        method: 'POST',
+                        data: companyData,
+                        success: function(response) {
+                            if (response.exists) {
+                                $('#addCompany').hide();
+                                $('#viewCompany').show()
+                                    .attr('href', response.url)
+                                    .click(function() {
+                                        window.location.href = response.url;
+                                    });
+                            } else {
+                                $.ajax({
+                                    url: '/api/company/add',
+                                    method: 'POST',
+                                    data: companyData,
+                                    success: function(response) {
+                                        alert('Entreprise ajoutée avec succès !');
+                                        location.reload();
+                                    },
+                                    error: function() {
+                                        alert('Erreur lors de l\'ajout de l\'entreprise');
+                                    }
+                                });
+                            }
+                        }
+                    });
+                });
+            });
+            </script>
+        <?php else :?>  
             <iframe height="100vh" width="100%" id="iframe"src="templateblank.php" style="width: 100%; height: 100vh; border: none;"></iframe>
         <?php endif; ?>
     </div>
 </div>
-   

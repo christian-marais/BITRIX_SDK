@@ -5,23 +5,48 @@ use \Exception;
 use \DateTime;
 use Symfony\Component\HttpClient\HttpClient;
 use NS2B\SDK\MODULES\BASE\CrmCompany;
-
+/**
+ * Class CompanyComponent
+ *
+ * Cette classe permet de gestion des entreprises
+ */
 class CompanyComponent extends CrmCompany{
+    /**
+     * Collection des entreprises
+     * @var \ArrayObject
+     */
     protected $companyCollection;
+    /**
+     * Clef d'identification de l'API Insee
+     * @var string
+     */
     private $inseeKey="8e5b6d15-6a7f-4dd0-9b6d-156a7f4dd0db";
+    /**
+     * Options de verification des certificats SSL
+     * @var array
+     */
     private $HttpOption = [
         'verify_peer' => false,
         'verify_host' => false
     ];
 
+    /**
+     * Constructeur
+     */
     public function __construct() {
         parent::__construct();
         $this->companyCollection = new \stdClass();
         $this
             ->getCurrentCompany()
+            ->getCompanyRequisite()
             ->setCompanySourcesUrl();
     }
 
+    /**
+     * Recherche l'entreprise actuelle
+     *
+     * @return $this
+     */
     public function getCurrentCompany() {
         
         try {
@@ -43,6 +68,12 @@ class CompanyComponent extends CrmCompany{
         return $this;
     }
 
+    /**
+     * Recherche l'entreprise avec le numéro SIRET
+     *
+     * @param string $siret
+     * @return $this
+     */
     public function getCompanyWithSiretFromBitrix(string $siret=null){
 
         try {
@@ -60,7 +91,7 @@ class CompanyComponent extends CrmCompany{
                         '*'
                     ],
                     'FILTER' => [
-                        $this->companySiretField => $siret
+                        $this->fields["siret"]=> $siret
                     ]
                 ])
                 ->getResponseData()
@@ -74,6 +105,11 @@ class CompanyComponent extends CrmCompany{
         return $this;
     }
 
+    /**
+     * Met a jour l'entreprise sur bitrix
+     *
+     * @return $this
+     */
     public function updateCompanyToBitrix(array $company=[]){
 
         try {
@@ -94,6 +130,11 @@ class CompanyComponent extends CrmCompany{
         return $this;
     }
 
+    /**
+     * Ajoute l'entreprise à bitrix
+     *
+     * @return $this
+     */
     public function addCompanyToBitrix(array $company=[]){
 
         try {
@@ -127,6 +168,11 @@ class CompanyComponent extends CrmCompany{
     }
 
 
+    /**
+     * Recherche les détails de l'entreprise dans les mentions
+     *
+     * @return $this
+     */
     public function getCompanyRequisite(){
         try {
            
@@ -154,13 +200,19 @@ class CompanyComponent extends CrmCompany{
         return $this;
     }
 
+
+    /**
+     * Set the company sources url
+     *
+     * @return $this
+     */
     public function setCompanySourcesUrl(){
         $bodacc="https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q=";
         $pappers="https://www.pappers.fr/recherche?q=";
         $societeCom="https://www.societe.com/societe/";
         $pagesJaunes="https://www.pagesjaunes.fr/siret/";
 
-        $requisite=$this->companyCollection->currentCompany['requisite'];
+        $requisite=$this->companyCollection->currentCompany['requisite']??[];
         $this->companyCollection->currentCompany['pappersUrl']=!empty($requisite[$this->fields["pappersUrl_mention"]])?$requisite[$this->fields["pappersUrl_mention"]]:$pappers.$this->companyCollection->currentCompany[$this->fields["siret"]];
         $this->companyCollection->currentCompany['annuaireUrl'] ='https://annuaire-entreprises.data.gouv.fr/etablissement/'.$this->companyCollection?->currentCompany["SIRET"];
         $this->companyCollection->currentCompany['pagesJaunesUrl']=$pagesJaunes.$this->companyCollection?->currentCompany["SIRET"];
@@ -182,6 +234,12 @@ class CompanyComponent extends CrmCompany{
         }
         return $this;
     }
+
+    /**
+     * Recherche l'entreprise sur l'annuaire entreprise
+     *
+     * @return $this
+     */
     public function setBodaccCustomRecord(){
         try{
             if($records=$this->companyCollection->currentCompany['bodacc']){
@@ -211,6 +269,11 @@ class CompanyComponent extends CrmCompany{
     }
 
 
+    /**
+     * Recherche l'entreprise sur l'annuaire entreprise
+     *
+     * @return $this
+     */
     public function getCompanyFromInsee(){
         try {
             $this->HttpOption["headers"] = [
@@ -231,7 +294,11 @@ class CompanyComponent extends CrmCompany{
         return $this;
     }
 
-   
+    /**
+     * Recherche l'entreprise sur l'annuaire entreprise
+     *
+     * @return $this
+     */
     public function getCompanyFromAnnuaire(){
         try {
             $client = HttpClient::create($this->HttpOption);
@@ -242,8 +309,7 @@ class CompanyComponent extends CrmCompany{
             }
             $annuaire=json_decode($response->getContent())->results[0];
             $this->companyCollection->currentCompany['legalName']=$annuaire?->nom_complet;
-            
-            if($dirigeant=$annuaire?->dirigeants[0])
+            if($dirigeant=$annuaire?->dirigeants[0]??null)
                 $annuaire->dirigeant=$dirigeant->nom.' '.$dirigeant->prenoms;
             
             $annuaire->matching_etablissements[]=$annuaire->siege;
@@ -252,7 +318,7 @@ class CompanyComponent extends CrmCompany{
             }
             if($annuaire->nombre_etablissements>1){
                 
-                $newResponse = json_decode($client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.($dirigeant??$annuaire->nom_complet).'&page=1&per_page=20')->getContent());
+                $newResponse = json_decode($client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.($annuaire->dirigeant??$annuaire->nom_complet).'&page=1&per_page=20')->getContent());
                 foreach($newResponse->results as $society){
                     if($society->siren==$this->companyCollection->currentCompany["SIREN"]){ 
                         $sirets=array_map(function($etablissement){
@@ -381,7 +447,7 @@ class CompanyComponent extends CrmCompany{
         header('Cache-Control: max-age=0');
         $company= $this->companyCollection->currentCompany;
         switch (true) {
-            case empty($company['SIREN']):
+            case true||empty($company['SIREN']):
                 include dirname(__FILE__) . '/templates/templateblank.php';
                 break;
         

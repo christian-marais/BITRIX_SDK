@@ -141,7 +141,7 @@
                         <div class="d-flex justify-content-between align-items-start mb-3">
                             <h3 class="h6">
                                 <?php echo $etablissement->est_siege ? 'Siège social' : 'Établissement secondaire'; ?>
-                                <?php if ($etablissement->ancien_siege): ?>
+                                <?php if ($etablissement->ancien_siege??false): ?>
                                     <span class="badge bg-warning">Ancien siège</span>
                                 <?php endif; ?>
                                 <span class="info-label mx-3"><?=$etablissement->siret?></span>

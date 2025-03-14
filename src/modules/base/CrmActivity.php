@@ -1,7 +1,6 @@
 <?php
 namespace NS2B\SDK\MODULES\BASE;
-
-require_once __DIR__ . '/base.php';
+use \Exception;
 abstract class CrmActivity extends Base{
     protected $B24 = null;
     protected $activityCollection = null;

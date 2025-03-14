@@ -4,32 +4,34 @@ namespace NS2B\SDK\MODULES\BASE;
 use Bitrix24\SDK\Services\ServiceBuilderFactory;
 use Bitrix24\SDK\Core\Credentials\ApplicationProfile;
 use Symfony\Component\HttpFoundation\Request;
-use NS2B\SDK\DATABASE\Database;
+use NS2B\SDK\DATABASE\DatabaseSqlite as Database;
 
 abstract class Base extends ServiceBuilderFactory{
    
     protected $action;
+    protected $webhook;
+    protected $entity;
+    protected $fields;
+    protected $entityFields;
+    protected $activityCollection;
+    protected $errorMessages;
+    protected $database;
+    protected $itemsPerPage;
+    protected $currentPage;
+    protected $contextId;
+    protected $currentScope;
+    protected $requiredScopes;
+    protected $B24;
 
     public function __construct($webhook=null) {
-       
+        $this->webhook=$webhook??$this->webhook;
         $this->activityCollection = new \stdClass();
-        $database = new Database();
-        if (!$database->dbExists()) {
-            $database->createDB();
-        }
-
-        // Initialiser la pagination depuis les paramètres GET
-        if (isset($_GET['itemsPerPage']))
-            $this->setItemsPerPage($_GET['itemsPerPage']);
-        
-        if (isset($_GET['page']))
-            $this->setCurrentPage($_GET['page']);
-
+        $database = new Database('database');
         $this
             ->setAction()
             ->checkRequiredScopes()
-            ->setItemsPerPage($itemsPerPage)
-            ->setCurrentPage($currentPage);
+            ->setItemsPerPage()
+            ->setCurrentPage();
         
         if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
             include_once($file);
@@ -52,6 +54,8 @@ abstract class Base extends ServiceBuilderFactory{
 
         $this->currentScope = $this->B24?->core?->call('scope')->getResponseData()->getResult();
     }
+
+    
 
     public function setAction(){
         $this->action[]=htmlspecialchars(strip_tags($_GET['action']??''));
@@ -90,8 +94,8 @@ abstract class Base extends ServiceBuilderFactory{
     }
 
     
-    public function setItemsPerPage($value=null) {
-        $itemsPerPage = $value??(isset($_GET['itemsPerPage']) ? intval($_GET['itemsPerPage']) : 10);
+    public function setItemsPerPage($itemsPerPage=null) {
+        $itemsPerPage = $itemsPerPage??(isset($_GET['itemsPerPage']) ? intval($_GET['itemsPerPage']) : 10);
         $this->itemsPerPage = max(1, intval($itemsPerPage));
         return $this;
     }
@@ -103,10 +107,10 @@ abstract class Base extends ServiceBuilderFactory{
         return (int)htmlentities(json_decode($_REQUEST["PLACEMENT_OPTIONS"])->ID);
     }
 
-    public function setCurrentPage($value=null) {
+    public function setCurrentPage($currentPage=null) {
         // Gestion des paramètres de pagination
 
-        $currentPage = $value??(isset($_GET['page']) ? intval($_GET['page']) : 1);
+        $currentPage = $currentPage??(isset($_GET['page']) ? intval($_GET['page']) : 1);
         $this->currentPage = max(1, intval($currentPage));
         return $this;
     }
