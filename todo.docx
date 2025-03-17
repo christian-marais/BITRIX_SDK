@@ -1,0 +1,106 @@
+Nous voulosn pouvoir stocker en les entrepriss renvoyées par l'annuaire dans uen liste de bitrix si on ne veut pas le rajouter en entreprise directement. Pour cela on doit créer la liste et rajouter l'entreprise dedans.
+On souhaite que les personnes puissent indiquer quels champs des propriétés de l'entreprise retournés par l'annuaire synchroniser et synchroniser avec quel champs dans bitrix, cela pour les entreprises et les contacts. 
+Si on ne veut pas créer d'netreprise dans bitrix on peut à la place ajouter l'entreprise dans une liste de bitrix. On peut faire pareil avec uen autre liste pour les contacts. 
+Il doit y avoir une table qui enreigstre les enregistrements envoyées dans bitrix. Elle doit permettre d'enregister l'id de l'élement et tous les ifnormations nécessaires pour l'identifier via une requete api dans bitrix (ex id de l'element, les informations di'identifications de l'entité qui ne sont pas les mêmes pour le crm et la les listes, le numéro siret de l'entreprise en question ou rattaché s'il s'agit du contact, le siret su siege ...)
+Tout doit être le plus auotmatisé et le plsu paramétrabel possible par l'utilisateur sans qu'on ait à toucher au code. Le fonctionnement et le code doit être à minima au niveau de ce qui se fait au mieux en ce moment en logiciel, logique  et code : que ce soit en design, fonction, nommage,en code, et maintenabilité et en simplicité 
+
+Comme tu verras il y a un bouton ajouter à bitrix au niveau de chaque entreprise retourner par la recherche de siret dans tempalteblank. Tu verras qu'il y a déjà des fonctionnalités implémenter comme un bouton qui apprarait pour consulter l'entreprise si elle est déjà présente dans bitrix qui fait disparaitre le bouton ajouter...
+Dans le tempalte presentation company il y a un bouton pour ajouter une entreprise à bitrix si elle n'est pas déjà présente dans bitrix. Elle suit la même logique mais tout n'est pas encore totaltement implémenté. Il y de même pour les dirigeants pour les rajouter en contacts dans bitrix tout en les liant à l'entreprise affichée si elle est déjà ajoutée dans bitrix.
+
+Voici des pistes de reflexion pour atteindre cet objectif qui sont encore à l'atape de brouillon donc tout n'est pas forcément à garder ou pertinent voir rien mais tu peux jeter un coup d'oeil. 
+
+Chaque module du projet a sa propre database en sqlite et ses propres tables. 
+Créer une classe listEntityManager qui étend la classe base qui est une liste sur bitrix24 pour récupérer l'objet b24
+Elle a une variable $fieldIdentifier qui est un array de champs de la liste ayant pour keys le nom humain ou naturel du champs et en valeur l'identifiant du champs.
+Son construct prend en signature le nom de la liste à créer et la variable fields (array ayant une structure nom naturel de champs => identifiant de champs de l'entité) d'autres entités afin de récupérer les keys pour initiliaser sa variable $fields avec des clés et et des valeurs vides.
+
+La classe list a a minima les fonctions : 
+
+ - addList (<nom de la liste>) (crée uen liste sur b24 à partir de l'objet b24) :
+methode de l'api :lists.add.json
+Les paramètres get : IBLOCK_TYPE_ID=lists_&IBLOCK_CODE=rest_1&&FIELDS[NAME]=List 1
+   IBLOCK_CODE nom suit le modèle de nommage suivant <prefixe NS>_<nom_dossier_du_moudle>_<nom_du_type_entite> tout en minuscule. ex : ns_crmcompanyinsee_company ou ns_crmcompanyinsee_contact
+   FIELDS[NAME] nom de la liste qui sera le nom du type entité par exemple contact ou company
+   valeur de retour de l'api 
+Array
+(
+    [result] => 25
+) result a pour valeur l'id de la liste crée 
+ - getList (récupère une liste identifiée par son id)
+method de l'api lists.get.json
+paramètres get : IBLOCK_TYPE_ID=lists
+    id est l'id retournée par l'api au moment de la création de liste
+   valeur de retour de l'api :
+Array
+(
+    [result] => array de liste (
+        ID => id de la liste
+        NAME=> nom de la liste
+        CODE=>IBLOCK_CODE de la liste
+    )
+)
+il faudra vérifier à l'aide de ces paramètres au choix si la liste existe
+
+ - addField (ajoute un champ à la liste)
+method de l'api fields.add.json
+paramètres get : IBLOCK_TYPE_ID=lists
+    IBLOCK_ID id de la liste
+    FIELD_NAME nom du champ
+    
+valeur de retour de l'api :
+Array
+(
+    [result] => PROPERTY_573
+)
+ - addElement
+method de l'api lists.element.add.json
+paramètres get : 
+{
+    'IBLOCK_TYPE_ID': 'lists',
+    'IBLOCK_ID': '41',
+    'ELEMENT_CODE': 'element1',
+    'FIELDS': {
+        'NAME': 'Test element 1',
+        'PROPERTY_121': 'value'
+    }
+}
+element code sera le name de l'element + un chiffre aléatoire composé d'uen longueur de 5 chiffers . Il doit etre en minuscule et que des lettres ou chiffres sans espace ou caractères speciaux
+valeur de retour de l'api :
+Array
+(
+    [result] => PROPERTY_573
+)
+Autre information pour la création du champ: lists.field.add.json?IBLOCK_TYPE_ID=lists&IBLOCK_CODE=rest_1&FIELDS[NAME]=Prenom&FIELDS[TYPE]=S&FIELDS[CODE]=prenom
+result renvoi l'identifiant du champ créé dont la structure est PROPERTY_<NOMBRE>
+ - getField (récupère un champ de la liste identifié par son id) :
+lists.field.get.json?IBLOCK_TYPE_ID=lists&IBLOCK_CODE=rest_1
+Retourne un array de list 
+valeur de retour : 
+ [result] => Array liste de champs
+        (
+            [PROPERTY_573] => Array(properties du champ),
+            [PROPERTY_574] => Array(properties du champ)
+            [NAME] => Array(properties du champ)
+            ...
+        )
+
+Les paramètres de la liste et de ses champs doit être stockés en mémoire dans la databasesqlite.
+tU T4AIDES DE LA CLASSE DATABASESQLITE POUR CA. Tous te snoms de colonnes sont en majuscules 
+ - DBListExists (<nom de la liste>) : verifie si une table avec le nom de la liste passée existe dans la base de données, tu peux utiliser databasesqlite et ses méthodes en injection de classe pour manipuler sqlite
+ - addListToDB (<nom de la liste>,array <colonnes>) : créé une table avec pour nom '<nom de la liste>customFields' dans la base de données sqlite
+array <colonnes> est un array de colonnes à creer dans la table décris ci dessous :
+
+ Il doit y avoir uen table fields_entity en colonne un id incrémentielle (ID), le nom humain du champs (NAME) qui correspondant à la clé de la vraiable fields de crmcompany pour company, l'identifiant du champs dasn bitrix (VALUE_ID), plus les informations necessaires à identifier l'entité dans bitrix comme IBLOCK_TYPE_ID, IBLOCK_ID et les autress champs identifiés précédemmen et nécéssaire à faire l'ensemble des requêtes api, en plus les informations du module comme par exemple la source des données copiées et ns_entity_source=bitrix ou sqlite, insee, etc....
+ 
+ - convertToKeys(data) : remplace les clés de data en nom naturel par leur idenfitant de champs obtenus sur les valeurs correspondantes dans l'array fields de la classe tout en conservant le valeur de data. Cette fonction sert à renommer les clés des valeurs
+ - convertToname($data) : fait l'opération inverse, remplaces les clés de valeurs par leur nom naturel
+ - createCustomFieldsTable(<table_name><$fields>) : crée la table de LA liste voulue en db si elle n'y est pas. C'est le nom transmis dans le constructeur. 
+ - getTableCustomFields(<nom_table>) : renvoie l'array de champs de la liste
+ -addTableCustomField(<nom_champ>): ajout d'une nouvelle colonne a la table
+ avant de créer une nouvelle liste
+
+Le principe est de stocker dans une liste bitrix si l'on souhaite les entreprises récupérées depuis l'annuaire entreprise lors de la recherche d'entreprise dans le templateblank ou chaque entreprise doit avoir en plus un bouton ajouter dans la liste commerciale
+les noms des champs à créer dans la liste sur bitrix sont les clés de la variables de classe fields de la classe crm company pour  
+ Les champs minimales à créer dasn la liste B24 ceux présents dans les clés stockés de la variable de classe fields, tu rajouteras les champs pour identifier l'entité
+LES NOMS DE COLONNES DANS LE SQL DOIVENT ETRE UNIFORMISES EN MAJUSCULES, idem pour les paramètres envoyés en requete api.
+LQuand on rajoute une entreprise dans la liste commerciale on la rajoute dans cette liste

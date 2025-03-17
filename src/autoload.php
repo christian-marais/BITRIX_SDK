@@ -11,13 +11,21 @@ spl_autoload_register(function ($class) {
 
         // Remplace les "\" du namespace par "/" pour le chemin du fichier
         $relativePath=explode('\\', $relativeClass);
-        if(count($relativePath)==4){
-            $relativePath=$relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2].'/'.$relativePath[3].'.php';
-
-            $file = $baseDir . $relativePath;
-            if (file_exists($file)) {
-                require $file;
-            }
+        switch(true){
+            case count($relativePath)==4:
+                $path=$relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2].'/'.$relativePath[3].'.php';
+                break;
+            case count($relativePath)>4:
+                $path=$relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2].'/'.implode('/', array_slice($relativePath, 3, count($relativePath))).'.php';
+                break;
+            default:
+                return;
+        }
+        
+        $file = $baseDir . $path;
+        
+        if (file_exists($file)) {
+            require $file;
         }
     }
 });

@@ -59,7 +59,7 @@
         .company-badge {
             background-color: #e9ecef;
             color: #495057;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
             border-radius: 6px;
             margin-right: 0.5rem;
@@ -101,6 +101,7 @@
             background-color: #0056b3;
             transform: translateY(-1px);
         }
+       
     </style>
 </head>
 <body>
@@ -126,7 +127,7 @@
         <div id="results" class="row">
         </div>
     </div>
-
+    <?php foreach($contents as $content) : echo $content; endforeach; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchInput');
@@ -135,13 +136,13 @@
             function renderEstablishments(etablissements, siren) {
                 return etablissements.map((etablissement, i) => {
                     const statusBadge =  '<span class="company-badge text-white ' + (etablissement.etat_administratif === 'A' ? ' bg-success ">En activité</span>': 'bg-danger">Fermé</span>');
-                    const siègeBadge = etablissement.est_siege ? '<span class="company-badge text-white bg-warning">Siège</span>': '';
+                    const siegeBadge = etablissement.est_siege ? '<span class="company-badge text-white bg-warning">Siège</span>': '';
                     return `
                         <div class="establishment-item">
                             <div class="row align-items-center">
                                 <div class="col">
                                 
-                                    <h4 class="establishment-title">Établissement ${i + 1} ${siègeBadge} ${statusBadge}</h4>
+                                    <h4 class="establishment-title">Établissement ${i + 1} ${siegeBadge} ${statusBadge}</h4>
                                     <p class="establishment-info">
                                         <i class="bi bi-upc me-2"></i>SIRET: ${etablissement.siret}
                                     </p>
@@ -208,9 +209,8 @@
         // Fonction pour vérifier si une entreprise existe dans Bitrix
         function checkCompanyInBitrix(siret) {
             return $.ajax({
-                url: '/api/company/check',
-                method: 'POST',
-                data: { siret: siret }
+                url: '/api/company/'+siret,
+                method: 'GET'
             });
         }
 
@@ -226,7 +226,7 @@
         // Fonction pour ajouter une entreprise dans Bitrix
         function addCompanyToBitrix(data) {
             return $.ajax({
-                url: '/api/company/add',
+                url: '/api/company/save',
                 method: 'POST',
                 data: data
             });

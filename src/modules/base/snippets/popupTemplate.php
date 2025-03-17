@@ -9,14 +9,15 @@
             <label for="webhookInput" style="display: block; margin-bottom: 8px; color: #555; font-weight: 500;">URL du Webhook :</label>
             <input type="text" 
                    id="webhookInput" 
-                   placeholder="https://exemple.com/webhook" 
+                   placeholder="<?= $webhookUrl ??'https://exemple.com/webhook' ?>" 
                    style="width: 100%; 
                           padding: 12px; 
                           border: 1px solid #ddd; 
                           border-radius: 4px; 
                           font-size: 14px;
                           box-sizing: border-box;
-                          margin-bottom: 15px;">
+                          margin-bottom: 15px;"
+                    value="">
             <small style="color: #666; display: block; margin-top: -10px;">L'URL sera partiellement masquée après la validation</small>
         </div>
         
@@ -46,7 +47,7 @@
 <script>
     // Au chargement, vérifier s'il y a déjà un webhook
     document.addEventListener('DOMContentLoaded', function() {
-        fetch('?action=getWebhook', {
+        fetch('<?=BASE_URL?>api/webhook', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -56,7 +57,7 @@
         .then(data => {
             if (data.success && data.webhook) {
                 const input = document.getElementById('webhookInput');
-                input.value = maskWebhook(data.webhook);
+                input.value = data.webhook;
                 input.style.border = '1px solid #00C851';
             }
         })
@@ -74,50 +75,31 @@
             showError('Veuillez saisir une URL valide');
             return;
         }
-
-        fetch('?action=saveWebhook', {
+        console.log(webhook,'<?=BASE_URL?>/api/webhook/save');
+        fetch('<?=BASE_URL?>api/webhook/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ webhook: webhook }),
+            body: JSON.stringify({data: { webhook: webhook }}),
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                const maskedWebhook = maskWebhook(data.webhook);
-                input.value = maskedWebhook;
+            if (data.status == 'success') {
                 input.style.border = '1px solid #00C851';
                 
                 // Changer le bouton de fermeture
                 const closeBtn = document.querySelector('button[onclick="closePopup()"]');
-                closeBtn.textContent = 'Continuer';
-                closeBtn.style.background = '#00C851';
-                closeBtn.style.color = 'white';
-                closeBtn.style.border = 'none';
-                closeBtn.onclick = function() {
-                    window.location.href = window.location.pathname;
-                };
+                window.location.href = window.location.pathname;
             } else {
                 input.style.border = '1px solid #ff4444';
-                showError(data.error || 'Webhook invalide');
+                showError(data.message || 'Webhook invalide');
             }
         })
         .catch(error => {
             console.error('Erreur:', error);
             showError('Erreur lors de la sauvegarde du webhook');
         });
-    }
-
-    function maskWebhook(webhook) {
-        try {
-            const url = new URL(webhook);
-            const domain = url.hostname;
-            const path = url.pathname.replace(/\d/g, '*');
-            return `${url.protocol}//${domain}${path}`;
-        } catch (e) {
-            return webhook;
-        }
     }
 
     function closePopup() {

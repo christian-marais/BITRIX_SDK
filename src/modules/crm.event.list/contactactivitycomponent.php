@@ -6,6 +6,7 @@ use \Exception;
 
 class ContactActivityComponent extends CrmActivity {
     
+    private $start;
     public function getActivities() {
         try {
             if(!$this->hasScope('crm'))

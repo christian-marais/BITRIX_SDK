@@ -83,7 +83,6 @@
                 <a class="nav-link active" href="#"><i class="bi bi-building me-2"></i>Fiche établissement</a>
             </li>
         </ul>
-
         <!-- Siège social -->
         <div class="info-block">
             <div class="info-header">
@@ -153,7 +152,9 @@
                         <div class="info-row">
                             <div class="info-label">Nom</div>
                             <div class="info-value"><?php echo htmlspecialchars($etablissement->nom_complet); ?></div>
-                            <button class="btn btn-primary">Ajouter l'entreprise</button>
+                            <div class="info-label">
+                                <button class="btn btn-primary">Ajouter la société</button>
+                            </div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Adresse</div>
@@ -168,6 +169,7 @@
                             <div class="info-value"><?php echo htmlspecialchars($etablissement->date_creation); ?></div>
                         </div>
                     </div>
+                   
                 <?php endforeach; ?>
             </div>
         </div>
@@ -197,9 +199,12 @@
                             <br>
                             <small class="text-muted">Né(e) en <?php echo htmlspecialchars($dirigeant->annee_de_naissance); ?></small>
                         </div>
-                        <button class="btn btn-sm btn-primary" onclick="window.location.href=''">Ajouter le contact</button>
+                        <div class="info-label">     
+                            <button class="btn btn-primary" onclick="window.location.href=''">Ajouter le contact</button>
+                        </div>
                     </div>
                     <?php endif;?>
+                  
                 <?php endforeach; ?>
             </div>
         </div>
@@ -238,13 +243,14 @@
                         <div class="info-value">
                             <p><span class="fw-bold badge bg-dark">Registre: </span>   <?php echo $record["registre"]. 'RCS '.$record["tribunal"]?></p>
                             <p><span class="fw-bold badge bg-dark">Description:</span>   <?php echo $record["description"]; ?></p>
-                            <p><span class="fw-bold badge bg-dark">Jugement: </span>   <?php echo $record["jugement"]; ?></p>
+                            <p><span class="fw-bold badge bg-danger">Jugement: </span>   <?php echo $record["jugement"]; ?></p>
                             <p><span class="fw-bold badge bg-dark"> Date du jugement :</span>   <?php echo $record["datejugement"]; ?></p>
-                            
-                            
+                        </div>
+                        <div class="info-label">     
                             <a class="btn btn-primary" title="consulter l'annonce" href="<?php echo $record['url_complete'];?>">Consulter l'annonce</a>
                         </div>
                     </div>
+                    <hr>
                 <?php endforeach; ?>
             </div>
         </div>

@@ -1,5 +1,6 @@
 <?php
 namespace NS2B\SDK\MODULES\BASE;
+use NS2B\SDK\Database\DatabaseSQLite;   
 use \Exception;
 abstract class CrmCompany extends Base{
     protected $B24 = null;
@@ -21,7 +22,7 @@ abstract class CrmCompany extends Base{
         'ville'=>'',
         'siren'=>'UF_CRM_1713268514493',
         'nom'=>'',
-        'acitivite'=>'',
+        'activite'=>'',
         'naf'=>'',
         'ca'=>'',
         'zoneNS2B_enum'=>'',
@@ -62,14 +63,44 @@ abstract class CrmCompany extends Base{
         return $this;
     }
 
-    protected function getCollection() {
+    public function saveCompanyToDb(): void
+    {
+        $database = new DatabaseSQLite('crmcompanyinsee.db');
+        if (!$database->dbExists()) {
+            $database->createDatabase('crmcompanyinsee.db');
+        }
+
+        if ($database->entityExists('company') || $database->createEntity('company')) {
+            $companyDbFields = $database->listFields('company');
+            $companyFields = $this->fields;
+            $fields = [];
+            
+            foreach ($companyFields as $field => $value) {
+                if (!in_array($value, $companyDbFields)) {
+                    $fields[] = $value;
+                }
+            }
+            
+            if (!empty($fields)) {
+                $database->createEntity('company', $fields);
+            }
+        }
+
+        if ($this->companyCollection && isset($this->companyCollection->currentCompany)) {
+            $database->insert('company', $this->companyCollection->currentCompany);
+        }
+    }
+
+    public function getCollection(): ?array 
+    {
         return $this->companyCollection;
     }
 
-    protected function setCollection($value) {
+    protected function setCollection(?array $value): void 
+    {
         $this->companyCollection = $value;
     }
-
+    
     abstract public function getCurrentCompany();
     abstract public function renderCurrentCompany();
 }
