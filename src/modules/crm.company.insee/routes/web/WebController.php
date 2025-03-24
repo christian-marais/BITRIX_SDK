@@ -25,12 +25,12 @@ class WebController
 
     public function viewCompany(Request $request,...$params): Response
     {
-    
         
         // Récupérer les données de l'entreprise
-       $company=!empty($params["siret"])? 
+        $company=!empty($params["siret"])? 
         $this->component
-            ->getCompanyWithSiretFromBitrix($params["siret"])
+            ->setCustomSiret($params["siret"])
+            ->getCompanyWithSiretFromBitrix()
             ->getCompanyRequisite()
             ->getCompanyFromAnnuaire()
             ->getCompanyFromInsee()
@@ -77,7 +77,7 @@ class WebController
     
     public function saveWebhook(Request $request): Response
     {
-        $success = $this->webhookManager->saveWebhook($request);
+        $success = $this->webhookManager->save($request);
 
         switch(true){
             case !$request->isMethod('POST'):

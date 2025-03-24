@@ -18,20 +18,20 @@
                           box-sizing: border-box;
                           margin-bottom: 15px;"
                     value="">
-            <small style="color: #666; display: block; margin-top: -10px;">L'URL sera partiellement masquée après la validation</small>
+            <small style="color: #666; display: block; margin-top: -10px;">L'URL doit être de la forme : https://domain/rest/uid/token/</small>
         </div>
         
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
-            <button onclick="closePopup()" 
+            <button onclick="submitWebhook('delete')" 
                     style="padding: 10px 20px; 
                            border: 1px solid #ddd; 
                            border-radius: 4px; 
-                           background: white; 
-                           color: #333;
+                           background: red; 
+                           color: white;
                            cursor: pointer;
                            font-weight: 500;
-                           transition: all 0.2s;">Annuler</button>
-            <button onclick="submitWebhook()" 
+                           transition: all 0.2s;">Supprimer</button>
+            <button onclick="submitWebhook('save')" 
                     style="padding: 10px 20px; 
                            border: none; 
                            border-radius: 4px; 
@@ -66,18 +66,19 @@
         });
     });
 
-    function submitWebhook() {
+    function submitWebhook(action) {
         const input = document.getElementById('webhookInput');
         const webhook = input.value.trim();
         
-        if (!webhook) {
+        if (!webhook && action !== 'delete') {
             input.style.border = '1px solid #ff4444';
-            showError('Veuillez saisir une URL valide');
+            showMessage('Veuillez saisir une URL valide', '#ff4444',action);
             return;
         }
-        console.log(webhook,'<?=BASE_URL?>/api/webhook/save');
-        fetch('<?=BASE_URL?>api/webhook/save', {
-            method: 'POST',
+        console.log(webhook,'<?=BASE_URL?>api/webhook/save');
+        console.log(JSON.stringify({data: { webhook: webhook }}));
+        fetch('<?=BASE_URL?>api/webhook/'+action, {
+            method: (action=='save')?'POST':(action=='delete')?'DELETE':'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -87,34 +88,37 @@
         .then(data => {
             if (data.status == 'success') {
                 input.style.border = '1px solid #00C851';
-                
+                showMessage(data.message || 'Webhook ' + action + ' avec succès', '#00C851');
                 // Changer le bouton de fermeture
                 const closeBtn = document.querySelector('button[onclick="closePopup()"]');
-                window.location.href = window.location.pathname;
+                setTimeout(() => { window.location.href = window.location.pathname; }, 5000);
             } else {
                 input.style.border = '1px solid #ff4444';
-                showError(data.message || 'Webhook invalide');
+                showMessage(data.message || 'Webhook invalide', '#ff4444');
             }
         })
         .catch(error => {
             console.error('Erreur:', error);
-            showError('Erreur lors de la sauvegarde du webhook');
+            showMessage('Erreur '+error, '#ff4444');
         });
     }
 
     function closePopup() {
         document.getElementById('webhookPopupOverlay').style.display = 'none';
     }
+    
 
-    function showError(message) {
+    function showMessage(message,color,action=null) {
         const input = document.getElementById('webhookInput');
         const small = input.nextElementSibling;
-        small.style.color = '#ff4444';
+        small.style.color = color;
         small.textContent = message;
-        setTimeout(() => {
-            small.style.color = '#666';
-            small.textContent = "L'URL sera partiellement masquée après la validation";
-        }, 3000);
+        if(action==='save'){
+            setTimeout(() => {
+                small.style.color = color;
+                small.textContent = "L'URL sera partiellement masquée après la validation";
+            }, 2000);
+        }
     }
 
     // Fermer avec la touche Echap

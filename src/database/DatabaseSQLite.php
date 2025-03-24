@@ -11,34 +11,46 @@ class DatabaseSQLite implements DatabaseInterface {
     protected $entity;
     protected $databaseCollection;
 
-    public function __construct($databaseName='database'){
-        if(!$this->dbExists($databaseName))
-            $this->createDatabase($databaseName);
+    public function __construct($database='database'){
+        try{
+            $this->createDatabase($database);
+        }catch(PDOException $e){
+            error_log($e->getMessage(),destination: __DIR__ . '/error.log');
+            throw new \PDOException($e->getMessage());
+        }
     }
-    public function setFields($fields) {
+    public function getDatabaseName() :string {
+        return $this->database;
+    }
+    public function setFields(array$fields) :self{
         $this->fields = $fields;
         return $this;
     }
-    public function getFields() {
+    public function getFields() :array{
         return $this->fields;
     }
-    public function __destruct() {
+    public function __destruct(){
         $this->pdo = null;
     }
 
-    public function dbExists($database=null) {
-        return file_exists($database??$this->database);
+    public function dbExists($database=null) :bool{
+        return file_exists($this->databasePath = __DIR__ . '/' . ($database??$this->database) . '.sqlite');
     }
 
-    public function createDatabase(string $databaseName) {
-        $this->databasePath = __DIR__ . '/' . $databaseName . '.sqlite';
-        $this->pdo = new PDO('sqlite:' . $this->databasePath);
-        $this->database = $databaseName;
-        $this->databaseCollection["history"][]="Création de la base de données $databaseName";
+    public function createDatabase(string $databaseName) :self{
+        try{
+            
+            $this->database = $databaseName;
+            $this->databasePath = __DIR__ . '/' . $databaseName . '.sqlite';
+            $this->pdo = new PDO('sqlite:' . $this->databasePath);
+            $this->databaseCollection["history"][]="Création de la base de données $databaseName";
+        }catch(PDOException $e){
+            error_log($e->getMessage(),destination:__DIR__ . '/error.log');
+        }
         return $this;
     }
 
-    public function dropDatabase(string $databaseName=null) {
+    public function dropDatabase(string $databaseName) {
         $databasePath = $databaseName?__DIR__ . '/' .$databaseName.'.sqlite':$this->databasePath ;
         if(file_exists($databasePath)){
             unlink($databasePath);
@@ -56,41 +68,36 @@ class DatabaseSQLite implements DatabaseInterface {
         return $this;
     }
     
-    public function entityExists(string $entityName) {
+    public function entityExists(string $entityName) :bool{
         $stmt = $this->pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = :name");
         $stmt->bindValue(':name', $entityName);
         $stmt->execute();
-        $this->databaseCollection[$entityName.'Exists'] = $stmt->fetch() !== false;
-        return $this;
+        return $this->databaseCollection[$entityName.'Exists'] = $stmt->fetch() !== false;
     }
+    
 
     public function createEntity(string $entityName, array $data) {
         // Sanitiser le nom de l'entité
+        if(empty($entityName)||empty($data)||!is_array($data))throw new \Exception('Impossible de créer l\'entité;pdo ou entityName ou data invalide');
+        $this->entityExists($entityName??$this->entity);
+        if($this->databaseCollection[$entityName.'Exists']){
+            return $this;
+        }
         $entityName = $this->sanitizeIdentifier($entityName);
 
         // Créer la table si elle n'existe pas
         $fields = [];
         foreach ($data as $key => $value) {
-            $fields[] = $this->sanitizeIdentifier($key) . " TEXT";
+            $fields[] = $this->sanitizeIdentifier($key) . ' ' . $value;
         }
-        
         $stmt = $this->pdo->prepare("CREATE TABLE IF NOT EXISTS $entityName (id INTEGER PRIMARY KEY AUTOINCREMENT, " . implode(", ", $fields) . ")");
         $stmt->execute([]);
-
-        // Préparer l'insertion
-        $columns = array_keys($data);
-        $placeholders = array_map(function($key) { return ":$key"; }, $columns);
-        
-        $stmt = $this->pdo->prepare("INSERT INTO $entityName (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")");
-        foreach ($data as $key => $value) {
-            $stmt->bindValue(":$key", $value);
-        }
-        $stmt->execute();
         $this->databaseCollection["history"][]='Insertion de l\'entité '.$entityName.' '.($this->entityExists($entityName)?'reussie':'échouée');
         return $this;
     }
 
     public function dropEntity(string $entityName) {
+        if(empty($this->pdo)||empty($entityName))throw new \Exception('Pdo ou nom de l\'entité invalide');
         $stmt = $this->pdo->prepare("DROP TABLE IF EXISTS " . $this->sanitizeIdentifier($entityName));
         $stmt->execute([]);
         $this->databaseCollection["history"][]='Suppression de l\'entité '.$entityName.' '.(!$this->entityExists($entityName)?'reussie':'échouée');
@@ -240,10 +247,13 @@ class DatabaseSQLite implements DatabaseInterface {
     }
 
     public function selects(string $entityName) {
-        $entityName = $this->sanitizeIdentifier($entityName);
-        $stmt = $this->pdo->prepare("SELECT * FROM " . $entityName);
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if($this->dbExists() && $this->entityExists($entityName)){
+            $entityName = $this->sanitizeIdentifier($entityName);
+            $stmt = $this->pdo->prepare("SELECT * FROM " . $entityName);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        return [];
     }
 
     public function selectWhere(string $entityName, array $criteria) {

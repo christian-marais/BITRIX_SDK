@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-    <link href="../../base/assets/css/style.php?lang=en" rel="stylesheet" type="text/css" media="all" />
+    <link href="../../base/assets/css/style.css?lang=en" rel="stylesheet" type="text/css" media="all" />
 </head>
 <body>
     <div class="container-fluid px-4 py-4">
@@ -326,7 +326,7 @@
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
 
-    <script type="text/javascript" src="./../base/assets/js/main.js"></script>
+    <script type="text/javascript" src="../base/assets/js/main.js"></script>
     <script type="text/javascript" src="./assets/js/eventList.js"></script>
     <!-- Ajout du code pour les pop-ups d'alerte -->
     <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">

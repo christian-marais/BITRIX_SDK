@@ -5,11 +5,12 @@ use Bitrix24\SDK\Services\ServiceBuilderFactory;
 use Bitrix24\SDK\Core\Credentials\ApplicationProfile;
 use Symfony\Component\HttpFoundation\Request;
 use NS2B\SDK\DATABASE\DatabaseSqlite as Database;
+use NS2B\SDK\MODULES\BASE\WebhookManager as WebhookManager;
 
-abstract class Base extends ServiceBuilderFactory{
+abstract class Base{
    
     protected $action;
-    protected $webhook;
+    protected $webhookManager;
     protected $entity;
     protected $fields;
     protected $entityFields;
@@ -24,45 +25,26 @@ abstract class Base extends ServiceBuilderFactory{
     protected $B24;
 
     public function __construct($webhook=null) {
-        $this->webhook=$webhook??$this->webhook;
-        $this->activityCollection = new \stdClass();
         $database = new Database('database');
+        $this->webhookManager = new WebhookManager($database);
+        $this->webhookManager->requiredScopes($this->requiredScopes);
+        $this->B24=$this->webhookManager->B24();
+        $this->currentScope=$this->webhookManager->currentScope()->getCollection()->currentScope;
+        $this->activityCollection = new \stdClass();
         $this
             ->setAction()
             ->checkRequiredScopes()
             ->setItemsPerPage()
             ->setCurrentPage();
-        
-        if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
-            include_once($file);
-        
-        switch(true){
-            case (!empty($_REQUEST['APP_SID']) && !empty($_REQUEST['APP_SECRET'])):
-                $appProfile = ApplicationProfile::initFromArray([
-                    'BITRIX24_PHP_SDK_APPLICATION_CLIENT_ID' => $_REQUEST['APP_SID'],
-                    'BITRIX24_PHP_SDK_APPLICATION_CLIENT_SECRET' => $_REQUEST['APP_SECRET'],
-                    'BITRIX24_PHP_SDK_APPLICATION_SCOPE' => $this->requiredScopes
-                ]);
-                break;
-          
-            default:
-                $this->B24 = self::createServiceBuilderFromWebhook(
-                    $webhook??'https://bitrix24demoec.ns2b.fr/rest/12/2neihcmydm0tpxux/'
-                );
-                break;
-        }
-
-        $this->currentScope = $this->B24?->core?->call('scope')->getResponseData()->getResult();
-    }
-
     
-
+    }
     public function setAction(){
         $this->action[]=htmlspecialchars(strip_tags($_GET['action']??''));
         return $this;
     }
     
     public function checkRequiredScopes() {
+        if (!is_array($this->requiredScopes)||!is_array($this->currentScope)) return $this;
         $missingScopes = array_diff($this->requiredScopes, $this->currentScope);
         if (!empty($missingScopes)) {
             $this->errorMessages[] = "Scopes manquants : " . implode(', ', $missingScopes);
@@ -72,41 +54,63 @@ abstract class Base extends ServiceBuilderFactory{
 
     // Méthode pour obtenir les scopes manquants
     public function getMissingScopes() {
+        if (!is_array($this->requiredScopes)||!is_array($this->currentScope)) return [];
         return array_diff($this->requiredScopes, $this->currentScope);
     }
 
-    public function hasScope($scope) {
+    public function hasScope(string $scope) {
+        if (!is_string($scope)||!is_array($this->currentScope)) return false;
         return $this->B24 && in_array($scope, $this->currentScope);
     }
 
     public function dd($value){
-        echo'<pre style="color:white;background-color:black;">';
-        var_dump($value);
-        echo'</pre>';
-        die();
+        $this->log($value);
     }
 
     public function log($e, $message = 'Erreur lors de la récupération') {
-        echo'<pre>';
-        var_dump($e);
-        echo'</pre>';
-        error_log($message . ': ' . $e->getMessage(), 1, __DIR__ . '/error.log');
+        if (defined('DEBUG') && DEBUG){
+            echo'<pre>';
+            var_dump($e);
+            echo'</pre>';
+            error_log($message . ': ' . $e->getMessage(), 0, __DIR__ . '/error.log');
+            exit;
+       } 
     }
 
-    
+    /**
+     * Set items per page
+     *
+     * @param int $itemsPerPage
+     * @return self
+     */
     public function setItemsPerPage($itemsPerPage=null) {
         $itemsPerPage = $itemsPerPage??(isset($_GET['itemsPerPage']) ? intval($_GET['itemsPerPage']) : 10);
         $this->itemsPerPage = max(1, intval($itemsPerPage));
         return $this;
     }
 
+    /**
+     * Get items per page
+     *
+     * @return int
+     */
+    public function getItemsPerPage(): int {
+        return $this->itemsPerPage??10;
+    }
+
     protected static function getContextId() {
         if (!isset($_REQUEST["PLACEMENT_OPTIONS"]) || empty($_REQUEST["PLACEMENT_OPTIONS"])) {
-            return 0;
+            return null;
         }
         return (int)htmlentities(json_decode($_REQUEST["PLACEMENT_OPTIONS"])->ID);
     }
 
+    /**
+     * Set current page
+     *
+     * @param int $currentPage
+     * @return self
+     */
     public function setCurrentPage($currentPage=null) {
         // Gestion des paramètres de pagination
 
@@ -115,6 +119,21 @@ abstract class Base extends ServiceBuilderFactory{
         return $this;
     }
 
+    /**
+     * Get current page
+     *
+     * @return int
+     */
+    public function getCurrentPage(): int {
+        return $this->currentPage;
+    }
+
+    /**
+     * Notify user
+     *
+     * @param string $message
+     * @return bool
+     */
     protected function notify(string $message){
         if(
             !empty($this->B24) &&

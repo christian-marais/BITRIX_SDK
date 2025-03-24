@@ -224,7 +224,7 @@
                     <form id="filterForm">
                         <div class="mb-3">
                             <label class="form-label">Statut</label>
-                            <select id="completedFilter" multiple>
+                            <select id="completedFilter">
                                 <option value="Y">Terminé</option>
                                 <option value="N">En cours</option>
                             </select>
@@ -239,7 +239,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Responsable</label>
-                            <select id="responsibleFilter" multiple>
+                            <select id="responsibleFilter">
                                 <?php 
                                 // $responsibles = array_unique(array_column($activities, 'RESPONSIBLE_ID'));
                                 $responsibles=array_unique($responsibles);
@@ -274,7 +274,7 @@
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
 
-    <script type="text/javascript" src="./../base/assets/js/main.js"></script>
+    <script type="text/javascript" src="../base/assets/js/main.js"></script>
     <script type="text/javascript" src="./assets/js/mailList.js"></script>
     <!-- Ajout du code pour les pop-ups d'alerte -->
     <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">

@@ -36,9 +36,23 @@ class CompanyComponent extends CrmCompany{
     public function __construct() {
         parent::__construct();
         $this->companyCollection = new \stdClass();
+        $this->companyCollection->currentCompany=[
+            'SIRET'=>null,
+            'SIREN'=>null,
+            'legalName'=>null,
+            'requisite'=>null,
+            'annuaire'=>null,
+            'bodacc'=>null,
+            'boddacAlerts'=>null,
+            'insee'=>null,
+            'pappers'=>null,
+            'societe.comUrl'=>null,
+            'pappersUrl'=>null,
+            'fields'=>$this->fields
+        ];
         $this
             ->getCurrentCompany()
-            ->getCompanyRequisite()
+            ->getCompanyRequisite() 
             ->setCompanySourcesUrl();
     }
 
@@ -48,19 +62,18 @@ class CompanyComponent extends CrmCompany{
      * @return $this
      */
     public function getCurrentCompany() {
-        
         try {
             if(!$this->hasScope('crm')){
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
-
             $company = $this->B24
                 ->core
-                ->call('crm.company.get', ['ID' => 3008])
+                ->call('crm.company.get', ['ID' => $this->getContextId()??3008])
                 ->getResponseData()
                 ->getResult();
-            $this->companyCollection->currentCompany = $company;
-            $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields["siret"]]);
+                
+            $this->companyCollection->currentCompany = array_merge($this->companyCollection->currentCompany, $company??[]);
+            $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields['bitrix']["siret"]]);
         } catch (Exception $e) {
             $this->log($e, 'Erreur lors de la récupération de l\'entreprise');
         }finally{
@@ -92,7 +105,7 @@ class CompanyComponent extends CrmCompany{
                         '*'
                     ],
                     'FILTER' => [
-                        $this->fields["siret"]=> $siret
+                        $this->fields['bitrix']["siret"]=> $siret
                     ]
                 ])
                 ->getResponseData()
@@ -116,6 +129,8 @@ class CompanyComponent extends CrmCompany{
         try {
             if(!$this->hasScope('crm'))
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
+            if(empty($company)&&!is_array($company))
+                throw new Exception('Les données de l\'entreprise sont invalides');
             $company = $this->B24
                 ->core
                 ->call('crm.item.update', [
@@ -132,6 +147,54 @@ class CompanyComponent extends CrmCompany{
         }
     }
 
+    private function addRequisite($company){
+        $requisite=[
+            "NAME"=>$company[$this->fields["bitrix"]['nom']],
+            "ENTITY_ID"=>$company['ID'],
+            "ENTITY_TYPE_ID"=>4,
+            'PRESET_ID'=>3,
+            $this->fields["bitrix"]['tva_intracommunautaire_mention']=>$company[$this->fields["bitrix"]['tva_intracommunautaire_mention']],
+            $this->fields["bitrix"]['naf_mention']=>$company[$this->fields["bitrix"]['naf']],
+            $this->fields["bitrix"]['nom_mention']=>$company[$this->fields["bitrix"]['nom']],
+            $this->fields["bitrix"]['rcs_mention']=>$company[$this->fields["bitrix"]['rcs_mention']],
+            $this->fields["bitrix"]['ca_mention']=>$company[$this->fields["bitrix"]['ca']],
+            $this->fields["bitrix"]['forme_juridique_mention']=>$company[$this->fields["bitrix"]['forme_juridique_mention']],
+            $this->fields["bitrix"]['siren_mention']=>$company[$this->fields["bitrix"]['siren']],
+            $this->fields["bitrix"]['siret_mention']=>$company[$this->fields["bitrix"]['siret']],
+            $this->fields["bitrix"]['pappersUrlMention']=>$company[$this->fields["bitrix"]['pappersUrlMention']],
+            $this->fields["bitrix"]['date_cloture_mention']=>$company[$this->fields["bitrix"]['date_cloture']],
+        ];
+        unset($requisite[""]);
+        return $requisite= $this->B24
+            ->core
+            ->call('crm.requisite.add', [
+                'fields' =>$requisite
+            ])
+            ->getResponseData()
+            ->getResult()[0];
+    }
+
+    private function addAddress($company){
+        $address=[
+            "ENTITY_ID"=>$company["ID"],
+            "ENTITY_TYPE_ID"=>4,
+            "TYPE_ID"=>1,//crm.enum.adressType
+            "COUNTRY_ID"=>"FR",
+            "REGION"=>"",
+            $this->fields["bitrix"]['commune_mention']=>$company[$this->fields["bitrix"]['commune_mention']],
+            $this->fields["bitrix"]['codePostale_mention']=>$company[$this->fields["bitrix"]['codePostale_mention']],
+            $this->fields["bitrix"]['rue_mention']=>$company[$this->fields["bitrix"]['rue_mention']]
+        ];
+        unset($address[""]);
+        return $address= $this->B24
+            ->core
+            ->call('crm.address.add', [
+                'fields' =>$address
+            ])
+            ->getResponseData()
+            ->getResult()[0];
+    }
+
     /**
      * Ajoute l'entreprise à bitrix
      *
@@ -142,31 +205,32 @@ class CompanyComponent extends CrmCompany{
         try {
             if(!$this->hasScope('crm'))
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
-            
-
-            $company = $this->B24
-                ->core
-                ->call('crm.item.add', [
-                    'entityTypeId' => 4,
-                    'fields' =>$company
-                ])
-                ->getResponseData()
-                ->getResult();
-            $company=array_merge($company,["ENTITY_TYPE_ID"=>4]);
-            $requisite= $this->B24
-                ->core
-                ->call('crm.requisite.add', [
-                    'fields' =>$company
-                ])
-                ->getResponseData()
-                ->getResult();
+            if(empty($company)&&!is_array($company))
+                throw new Exception('Les données de l\'entreprise sont invalides');
            
-            
+                $company["ID"]= $this->B24
+                ->core
+                ->call('crm.company.add', [
+                    // 'entityTypeId' => 4,
+                    'fields' =>$company
+                ])
+                ->getResponseData()
+                ->getResult()[0];
+            $requisite=$this->addRequisite($company);
+            $address=$this->addAddress($company);
+         
+            return [
+                'status' => 'success',
+                'message' => 'Entreprise ajoutée avec succès:'.$company["ID"],
+                'result' => $company["ID"]
+            ];
             
         }catch (Exception $e) {
-            $this->log($e, 'Erreur lors de la mise à jour de l\'entreprise');
-        }finally{
-            return $this;
+            $this->log($e, 'Erreur lors de l\'ajout de l\'entreprise');
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ];
         }
     }
 
@@ -190,7 +254,7 @@ class CompanyComponent extends CrmCompany{
                     'ENTITY_ID' => 3008,
                     'ENTITY_TYPE_ID' => $this->entityTypeId
                 ],
-                'select' => [$this->fields["pappersUrl_mention"],'*']
+                'select' => [$this->fields['bitrix']["pappersUrl_mention"],'*']
                 ])
                 ->getResponseData()
                 ->getResult()[0]??null;
@@ -210,30 +274,45 @@ class CompanyComponent extends CrmCompany{
      * @return $this
      */
     public function setCompanySourcesUrl(){
-        $bodacc="https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q=";
-        $pappers="https://www.pappers.fr/recherche?q=";
-        $societeCom="https://www.societe.com/societe/";
-        $pagesJaunes="https://www.pagesjaunes.fr/siret/";
-        $siret=$this->companyCollection->currentCompany['SIRET']??'';
+        try{
+            if(!isset($this->companyCollection->currentCompany)){
+                $this->companyCollection->currentCompany=[];
+                throw new Exception('Les données de l\'entreprise sont invalides, l\'entreprise n\'a pas été trouvéepas été récupérée depsui bitrix');
+           
+            }
+            if(empty($siret=$this->companyCollection->currentCompany['SIRET']))
+                throw new Exception('Le SIRET de l\'entreprise est invalide :'.$siret);
+            $siren=$this->companyCollection->currentCompany['SIREN']??=substr($siret, 0, 9);
 
-        $requisite=$this->companyCollection->currentCompany['requisite']??[];
-        $this->companyCollection->currentCompany['pappersUrl']=!empty($requisite[$this->fields["pappersUrl_mention"]])?$requisite[$this->fields["pappersUrl_mention"]]:$pappers.$siret;
-        $this->companyCollection->currentCompany['annuaireUrl'] ='https://annuaire-entreprises.data.gouv.fr/etablissement/'.$siret;
-        $this->companyCollection->currentCompany['pagesJaunesUrl']=$pagesJaunes.$siret;
-        $this->companyCollection->currentCompany['societe.comUrl']=$societeCom.strtolower(str_replace([' ', '&', '_' , '\'', '-'], '-', $this->companyCollection->currentCompany['legalName']??'').'-'.$this->companyCollection->currentCompany['SIREN'].'.html');
+            $bodacc="https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q=";
+            $pappers="https://www.pappers.fr/recherche?q=";
+            $societeCom="https://www.societe.com/societe/";
+            $pagesJaunes="https://www.pagesjaunes.fr/siret/";
+            
+            $requisite=$this->companyCollection->currentCompany['requisite']??[];
+            $this->companyCollection->currentCompany['pappersUrl']=!empty($requisite[$this->fields['bitrix']["pappersUrl_mention"]??''])?$requisite[$this->fields['bitrix']["pappersUrl_mention"]]:$pappers.$siret;
+            $this->companyCollection->currentCompany['annuaireUrl'] ='https://annuaire-entreprises.data.gouv.fr/etablissement/'.$siret;
+            $this->companyCollection->currentCompany['pagesJaunesUrl']=$pagesJaunes.$siret;
+            $this->companyCollection->currentCompany['societe.comUrl']=$societeCom.strtolower(str_replace([' ', '&', '_' , '\'', '-'], '-', $this->companyCollection->currentCompany['legalName']??'').'-'.$siren.'.html');
+        
+        }catch(Exception $e){
+            $this->log($e, 'Erreur lors de la mise à jour des sources de l\'entreprise');
+        }
         return $this;
     }
 
     public function getCompanyFromBodacc(){
         try {
+            if(empty($this->companyCollection->currentCompany["SIREN"])||!is_numeric($this->companyCollection->currentCompany["SIREN"]))
+                throw new Exception('Siren invalide');
             $client = HttpClient::create($this->HttpOption);
             $response = $client->request('GET', 'https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q='.$this->companyCollection->currentCompany["SIREN"]);
-            if ($response->getStatusCode() != 200) {
-                throw new Exception('Erreur lors de la récupération du bodacc');
-            }
-            $this->companyCollection->currentCompany['bodacc']=json_decode($response->getContent())->records;
             
+            if ($response->getStatusCode() != 200)
+                throw new Exception('Erreur lors de la récupération du bodacc');
+            $this->companyCollection->currentCompany['bodacc']=json_decode($response->getContent()??'{}')?->records;
             $this->setBodaccCustomRecord();
+
         } catch (Exception $e) {
             $this->log($e, $e->getMessage());
         }finally{
@@ -281,7 +360,10 @@ class CompanyComponent extends CrmCompany{
      * @return $this
      */
     public function getCompanyFromInsee(){
+        
         try {
+            if(empty($this->companyCollection->currentCompany["SIRET"])||!is_numeric($this->companyCollection->currentCompany["SIRET"]))
+            throw new Exception('Siret invalide');
             $this->HttpOption["headers"] = [
                 'X-INSEE-Api-Key-Integration' => $this->inseeKey,
             ];
@@ -293,9 +375,11 @@ class CompanyComponent extends CrmCompany{
             if ($response->getStatusCode() != 200) {
                 throw new Exception('Erreur lors de la récupération INSEE de l\'entreprise');
             }
-            $this->companyCollection->currentCompany['insee']=$company=json_decode($response->getContent());
-            $this->companyCollection->currentCompany['legalName']=$company->etablissement->uniteLegale->denominationUniteLegale??($company->etablissement->uniteLegale->nomUniteLegale.' '.$company->etablissement->uniteLegale->prenom1UniteLegale);
-            
+
+            $this->companyCollection->currentCompany['insee']=$company=json_decode($response->getContent()??'{}');
+            $this->companyCollection->currentCompany["legalForm"]=!empty($company)?$this->companyCollection->currentCompany['insee']->legalForm=$this->getCategoryLabel($company?->etablissement->uniteLegale->categorieJuridiqueUniteLegale??''):null;
+            $this->companyCollection->currentCompany["legalName"]=$company->etablissement->uniteLegale->denominationUniteLegale??($company->etablissement->uniteLegale->nomUniteLegale.' '.$company->etablissement->uniteLegale->prenom1UniteLegale);
+
         } catch (Exception $e) {
             $this->log($e, $e->getMessage());
         }finally{
@@ -303,31 +387,63 @@ class CompanyComponent extends CrmCompany{
         }
     }
 
+    private function getCategoryLabel(string $code,$categorie='categorie_juridique'): string {
+        $label = $code;
+        $file=__DIR__ . '/const/'.$categorie.'.php';
+        if(file_exists($file)){
+            $categories = require $file;
+            if (!empty($code) && is_array($categories)) {
+                $label = $categories[$code] ?? $code;
+            }
+        }
+        return $label;
+    }
+
+   public function getCategoryLabelFromText($code, $categorie = 'naf') {
+       $file = __DIR__ . '/const/' . $categorie . '.txt';
+       $newArray = []; // Initialize the array to avoid undefined variable notice
+   
+       if (file_exists($file)) {
+           $data = file_get_contents($file);
+           $lines = explode(PHP_EOL, $data); // Split the data into lines
+   
+           foreach ($lines as $line) {
+               if (preg_match('/^(\S+)\s+(.*)$/', $line, $matches)) {
+                   $newArray[$matches[1]] = $matches[2]; // Create associative array
+               }
+           }
+       }
+       return $newArray[$code] ?? $code; // Return the label or the code if not found
+   }
     /**
      * Recherche l'entreprise sur l'annuaire entreprise
      *
      * @return $this
      */
     public function getCompanyFromAnnuaire(){
+       
         try {
+            if(empty($this->companyCollection->currentCompany)||empty($siret=$this->companyCollection->currentCompany["SIRET"])||!is_numeric($siret))
+                throw new Exception('Siret invalide');
+            $siren=$this->companyCollection->currentCompany["SIREN"]??substr($siret, 0, 9);
             $client = HttpClient::create($this->HttpOption);
-            $response = $client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.$this->companyCollection->currentCompany["SIRET"].'&page=1&per_page=20');
+            $response = $client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search?q='.$siret.'&page=1&per_page=20');
           
-            if ($response->getStatusCode() != 200) {
+            if ($response->getStatusCode() != 200) 
                 throw new Exception('Erreur lors de la récupération de l\'annuaire entreprise');
-            }
+            
             $annuaire=json_decode($response->getContent())->results[0];
             
             $this->companyCollection->currentCompany['legalName']=$annuaire?->nom_complet;
-          
+            $this->companyCollection->currentCompany["libelle_activite"]=!empty($annuaire)?$annuaire->libelle_activite_principale=$this->getCategoryLabelFromText($annuaire?->siege->activite_principale??'','naf'):null;
             if($dirigeant=$annuaire?->dirigeants[0]??null)
                 $annuaire->dirigeant=$dirigeant->nom.' '.$dirigeant->prenoms;
             $annuaire->matching_etablissements[]=$annuaire->siege;
             $sirets=[];
-            
             foreach($annuaire->matching_etablissements as $key =>$etablissement){
+                $annuaire->matching_etablissements[$key]->forme_juridique??=$this->getCategoryLabel($annuaire->nature_juridique??'');
                 $annuaire->matching_etablissements[$key]->nom_complet??=$annuaire->nom_complet;
-                
+                $annuaire->matching_etablissements[$key]->libelle_activite_principale=$this->getCategoryLabelFromText($etablissement?->activite_principale??'','naf');
                 if(!empty($etablissement->siret) && in_array($etablissement->siret,$sirets)){
                     unset($annuaire->matching_etablissements[$key]);
                 }
@@ -341,12 +457,14 @@ class CompanyComponent extends CrmCompany{
                
                foreach($newResponse->results as $society){
                     
-                    if($society->siren==$this->companyCollection->currentCompany["SIREN"]){ 
+                    if($society->siren==$siren){ 
                         $sirets=array_map(function($etablissement){
                             return $etablissement->siret;
                         },$annuaire->matching_etablissements);
                         foreach($society->matching_etablissements as $key => $etablissement){
                             if(!empty($etablissement->siret) && !in_array($etablissement->siret,$sirets)){
+                                $etablissement->forme_juridique=$this->getCategoryLabel($society?->nature_juridique??'');
+                                $etablissement->libelle_activite_principale=$this->getCategoryLabelFromText($etablissement?->activite_principale??'','naf');
                                 $etablissement->nom_complet=$society->nom_complet;
                                 $annuaire->matching_etablissements[$key]=$etablissement;
                                 
@@ -365,14 +483,17 @@ class CompanyComponent extends CrmCompany{
                         $newResponse = json_decode($client->request('GET', $url)->getContent());
                        
                         foreach($newResponse->results as $society){
-                            if($society->siren==$this->companyCollection->currentCompany["SIREN"]){ 
+                            if($society->siren==$siren){ 
                                 $sirets=array_map(function($etablissement){
                                     return $etablissement->siret;
                                 },$annuaire->matching_etablissements);
                                 foreach($society->matching_etablissements as $etablissement){
-                                    if($etablissement->siret!==$this->companyCollection->currentCompany["SIRET"] && !in_array($etablissement->siret,$sirets)){
+                                    if($etablissement->siret!==$siret && !in_array($etablissement->siret,$sirets)){
+                                        $etablissement->libelle_activite_principale=$this->getCategoryLabelFromText($etablissement?->activite_principale??'','naf');
+                                        $etablissement->forme_juridique=$this->getCategoryLabel($society?->nature_juridique??'');
                                         $etablissement->nom_complet=$society->nom_complet;
                                         $annuaire->matching_etablissements[$etablissement->siret]=$etablissement;
+
                                     }
                                 }
                                $goNext=false;
@@ -386,14 +507,16 @@ class CompanyComponent extends CrmCompany{
         } catch (Exception $e) {
             $this->log($e, $e->getMessage());
         }finally{
-            $this->companyCollection->currentCompany['annuaire']=$annuaire;
+            $this->companyCollection->currentCompany['annuaire']=$annuaire??[];
             return $this;
         }
     }
     
-    public function getBodaccAlerts(array $sirets=null):self{
-        if(empty($sirets)) return $this;
+    public function getBodaccAlerts(array $sirets=[]):self{
+        
         try {
+            if(empty($sirets)||!is_array($sirets))
+                throw new Exception('Il n\'est pas donné un tableau de sirets valide');
             $client = HttpClient::create($this->HttpOption);
             $date= "and dateparution=date'".(new DateTime('today'))->format('Ymd')."'";
             $date='';

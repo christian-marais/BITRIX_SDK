@@ -153,7 +153,7 @@
                             <div class="info-label">Nom</div>
                             <div class="info-value"><?php echo htmlspecialchars($etablissement->nom_complet); ?></div>
                             <div class="info-label">
-                                <button class="btn btn-primary">Ajouter la société</button>
+                                <button class="btn btn-primary" onclick="addCompany('<?=$etablissement->siret?>')" data-bs-toggle="modal" data-bs-target="#addCompanyModal">Ajouter la société</button>
                             </div>
                         </div>
                         <div class="info-row">
@@ -256,5 +256,6 @@
         </div>
         <?php endif; ?>
     </div>
+  
 </body>
 </html>

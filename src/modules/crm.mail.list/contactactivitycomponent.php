@@ -29,6 +29,7 @@ class ContactActivityComponent extends CrmActivity{
             $_GET['subject'] ? $countParams['filter']['%SUBJECT'] = htmlspecialchars($_GET['subject']) : '';
             $_GET['startDate'] ? $countParams['filter']['>=START_TIME'] = htmlspecialchars($_GET['startDate']) : '';
             $_GET['endDate'] ? $countParams['filter']['<=END_TIME'] = htmlspecialchars($_GET['endDate']) : '';
+            $_GET['completed'] ? $countParams['filter']['COMPLETED'] = htmlspecialchars($_GET['completed']) : '';
             // Récupérer le nombre total
             $totalCount = $this->B24
                 ->core
@@ -101,8 +102,8 @@ class ContactActivityComponent extends CrmActivity{
 }
 
 // Si le script est appelé directement
-if (isset($_GET['ajax']) && $_GET['ajax'] == 'y') {
-    $mailActivities = new NSContactMailActivity();
-    $mailActivities->renderActivitiesList();
-}
+// if (isset($_GET['ajax']) && $_GET['ajax'] == 'y') {
+//     $mailActivities = new NSContactMailActivity();
+//     $mailActivities->renderActivitiesList();
+// }
 ?>

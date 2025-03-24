@@ -122,12 +122,12 @@
             </div>
         </div>
     </div>
-
+    <?php $domain ='http://'.$request->server->get('HTTP_HOST').'/' ;?>
     <div class="container results-container">
         <div id="results" class="row">
         </div>
     </div>
-    <?php foreach($contents as $content) : echo $content; endforeach; ?>
+    <?php foreach($contents??[] as $content) : echo $content; endforeach; ?>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('searchInput');
@@ -152,7 +152,7 @@
                                 </div>
                                 <div class="col-auto">
                                     <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-primary add-to-bitrix" data-siret="${etablissement.siret}" data-siren="${siren}">
+                                        <button type="button" class="btn btn-primary addCompany add-to-bitrix" data-siret="${etablissement.siret}" data-siren="${siren}">
                                             <i class="bi bi-plus-circle me-2"></i>Ajouter
                                         </button>
                                         <a href="#" class="btn btn-secondary ms-2 view-in-bitrix" style="display: none;" data-siret="${etablissement.siret}">
@@ -204,8 +204,57 @@
     </script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
+    <script src="../../../base/assets/js/slider.js"></script>
     <script>
     $(document).ready(function() {
+        document.querySelectorAll('.addCompany').forEach(element => {
+            element.addEventListener('click', function() {
+                showCompany(this.getAttribute('data-siret'));
+            });
+        });
+        function addCompany(siret){
+            fetch('/api/company/'+siret+'/save')
+            .then(response => response.json())
+            .then(
+                data => {
+                    if(data.status==="success"){
+                        window.location.reload();
+                  }
+                }
+            );
+        }
+
+        function showCompany(siret){
+            fetch('/api/company/'+siret+'/')
+            .then(response => response.json())
+            .then(
+                data => {
+                    if(data.status==="success"){
+                        const id='showCompany'+siret;
+                        const button=document.getElementById(id);
+                        const  url='<?=$domain?>crm/company/details/'+data.result+'/';
+                        button.setAttribute('onclick', "setBitrix24Slider('"+id+"','"+url+"')");
+                        button.innerText='Consulter l\'entreprise sur bitrix';
+                  }
+                }
+            );
+        }
+        
+        setBitrix24Slider();
+        function showCompany(companyId){
+            fetch('<?=$domain?>crm/company/details/'+companyId+'/')
+            .then(response => response.json())
+            .then(
+                data => {
+                    if(data.status==="success"){
+                        const button=document.getElementById('showCompany'+siret);
+                        button.setAttribute('onclick', "showCompany('"+siret+"')");
+                        button.innerText='Consulter l\'entreprise sur bitrix';
+                  }
+                }
+            );
+        }
         // Fonction pour vérifier si une entreprise existe dans Bitrix
         function checkCompanyInBitrix(siret) {
             return $.ajax({
@@ -224,11 +273,10 @@
         }
 
         // Fonction pour ajouter une entreprise dans Bitrix
-        function addCompanyToBitrix(data) {
+        function addCompanyToBitrix(siret) {
             return $.ajax({
-                url: '/api/company/save',
-                method: 'POST',
-                data: data
+                url: '/api/company/'+siret+'/save',
+                method: 'GET'
             });
         }
 

@@ -11,40 +11,65 @@ use NS2B\SDK\MODULES\CRM\COMPANY\INSEE\CompanyComponent;
 class ApiController
 {   
     private WebhookManager $webhookManager;
-    private DatabaseSQLite $db;
-    private CompanyComponent $companyComponent;
-    private object $company;
-
-    public function __construct()
-    {
-        $this->db = new DatabaseSQLite();
-        $this->companyComponent = new CompanyComponent();
+    public function __construct(
+        private CompanyComponent $companyComponent=new CompanyComponent(),
+        private DatabaseSQLite $db=new DatabaseSQLite(),
+        private \stdClass $company=new \stdClass()
+    ) {
         $this->webhookManager = new WebhookManager($this->db);
-        $this->company = new \stdClass();
     }
     public function saveCompany(Request $request,...$params): Response
     {
         try {
-            $data = json_decode($request->request->get('data'), true);
+            extract($params);
+            $company=$this->companyComponent->setCustomSiret($siret)->getCompanyFromAnnuaire()->getCompanyFromInsee()->getCompanyFromBodacc()->setBodaccCustomRecord()->getCollection()->currentCompany;
             
-            // Logique pour ajouter une entreprise
-            // TODO: Implémenter la logique d'ajout
 
-            return new JsonResponse([
-                'status' => 'success',
-                'message' => 'Entreprise ajoutée avec succès'
-            ]);
+            if(!empty($etablissements=$company["annuaire"]?->matching_etablissements)){
+                $fields=$this->companyComponent->getCollection()->currentCompany["fields"]["bitrix"];
+                $company["saveToB24"]=[
+                    $fields['siret']=>$etablissements[0]?->siret,
+                    $fields['codePostale_mention']=>$etablissements[0]?->code_postale,
+                    $fields['commune_mention']=>$etablissements[0]?->libelle_commune,
+                    $fields['rue_mention']=>$etablissements[0]?->adresse,
+                    $fields['ville_mention']=>$etablissements[0]?->libelle_commune,
+                    $fields['siren']=>substr($etablissements[0]?->siret,0,9),
+                    $fields['nom']=>$etablissements[0]?->nom_complet,
+                    $fields['activite']=>$etablissements[0]?->activite_principale,
+                    $fields['naf']=>$etablissements[0]?->activite_principale.' '.$etablissements[0]?->libelle_activite_principale,
+                    $fields['ca']=>'',
+                    $fields["adresse"]=>$etablissements[0]?->adresse,
+                    $fields['zoneNS2B_enum']=>'',
+                    $fields['statut_enum']=>'',
+                    $fields['activite_enum']=>'',
+                    $fields['email']=>'',
+                    $fields['tel']=>'',
+                    $fields['famille_enum']=>'',
+                    $fields['nom_mention']=>$etablissements[0]?->nom_complet,
+                    $fields['forme_juridique_mention']=>$etablissements[0]?->forme_juridique,
+                    $fields['ca_mention']=>'',
+                    $fields['siret_mention']=>$etablissements[0]?->siret,
+                    $fields['naf_mention']=>$etablissements[0]?->activite_principale.' '.$etablissements[0]?->libelle_activite_principale,
+                    $fields['rcs_mention']=>'',
+                    $fields['tva_intracommunautaire_mention']=>'',
+                    $fields['date_clôture_mention']=>$etablissements[0]?->activite_principale,
+                    $fields['identifiant_association_mention']=>'',
+                    $fields['pappersUrl_mention']=>'',
+                ];
+                unset($company["saveToB24"][""]);
+            }
+            $result=$this->companyComponent->addCompanyToBitrix($company["saveToB24"]);
+            return new JsonResponse($result,200);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'result'=>$result
             ], 400);
         }
     }
     public function saveCompanyToDb(Request $request, ...$params): Response
     {   
-        
-
         try {
             $database=new DatabaseSQLite('crmcompanyinsee.db');
             $data = json_decode($request->getContent(), true);
@@ -68,15 +93,34 @@ class ApiController
     {
         try {
             extract($params);
-            $this->company->currentCompany["bitrix"] = $this->companyComponent->getCompanyWithSiretFromBitrix($siret)->getCollection();
-            if(!$this->company->currentCompany["bitrix"]){
-                throw new \Exception('Entreprise introuvable');
+            $this->company->currentCompany["bitrix"]=$this->companyComponent->getCompanyWithSiretFromBitrix($siret)->getCollection()->currentCompany;
+            if(empty($this->company->currentCompany["bitrix"])||empty($this->company->currentCompany["bitrix"]["ID"])){
+                throw new \Exception('Entreprise introuvable dans bitrix');
             }
                 $this->company->currentCompany['exists'] = true;
                 $this->company->currentCompany["siret"] = $siret;
                 return new JsonResponse([
                     'status' => 'success',
-                    'data' => $this->company->currentCompany
+                    'data' => $this->company->currentCompany["bitrix"]
+                ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+    }
+    public function getAnnuaire(Request $request, ...$params): Response
+    {
+        try {
+            extract($params);
+            $this->company->currentCompany=$this->companyComponent->setCustomSiret($siret)->getCompanyFromAnnuaire()->getCollection()->currentCompany;
+            if(empty($this->company->currentCompany["annuaire"])){
+                throw new \Exception('Entreprise introuvable dans annuaire');
+            }
+                return new JsonResponse([
+                    'status' => 'success',
+                    'data' => $this->company->currentCompany["annuaire"]
                 ]);
         } catch (\Exception $e) {
             return new JsonResponse([
@@ -111,7 +155,7 @@ class ApiController
        
        try {
             $hasBeenSaved=$this->webhookManager->save($request);
-            if(!$hasBeenSaved['status'] == 'success') {
+            if($hasBeenSaved['status'] !=='success') {
                 throw new \Exception($hasBeenSaved['message']);
             }else{
                 return new JsonResponse([
@@ -128,22 +172,40 @@ class ApiController
         }
     }
 
+    public function deleteWebhook(Request $request,...$params): Response
+    {   
+        try {
+            if(!$this->webhookManager->deleteWebhook()) {
+                throw new \Exception('Erreur lors de la suppression du webhook');
+            }
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => 'Webhook supprimé avec succès'
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
     public function getWebhook(Request $request,...$params): Response
     {   
         try {
-            if(!isset($params['webhook'])) {
+            if(empty($webhook=$this->webhookManager->getWebhook())) {
                 throw new \Exception('Webhook not found');
             }
             return new JsonResponse([
                 'status' => 'success',
                 'data' => [
-                    'webhook' => $params['webhook']??''
+                    'webhook' => $webhook??''
                 ]
             ]);
         } catch (\Exception $e) {
             return new JsonResponse([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => $webhook.' '.$e->getMessage()
             ], 404);
         }
     }
