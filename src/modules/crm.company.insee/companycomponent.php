@@ -421,8 +421,10 @@ class CompanyComponent extends CrmCompany{
      * @return $this
      */
     public function getCompanyFromAnnuaire(){
-       
+        error_log('Starting getCompanyFromAnnuaire');
         try {
+            
+            error_log('Processing data...');
             if(empty($this->companyCollection->currentCompany)||empty($siret=$this->companyCollection->currentCompany["SIRET"])||!is_numeric($siret))
                 throw new Exception('Siret invalide');
             $siren=$this->companyCollection->currentCompany["SIREN"]??substr($siret, 0, 9);
@@ -450,10 +452,10 @@ class CompanyComponent extends CrmCompany{
                 $sirets[]=$etablissement->siret;
             }
             
-            
+            error_log('First request ending...');
             if($annuaire->nombre_etablissements>1){
-            
-               $newResponse = json_decode($client->request('GET', $url='https://recherche-entreprises.api.gouv.fr/search?q='.($annuaire->nom_complet??$annuaire->dirigeant).'&page=1&per_page=20')->getContent());
+                error_log('Requesting more result starting...');
+                $newResponse = json_decode($client->request('GET', $url='https://recherche-entreprises.api.gouv.fr/search?q='.($annuaire->nom_complet??$annuaire->dirigeant).'&page=1&per_page=20')->getContent());
                
                foreach($newResponse->results as $society){
                     
@@ -473,9 +475,9 @@ class CompanyComponent extends CrmCompany{
                       
                     }
                 }
-               
+                error_log('Requesting more result ending...');
                 if($newResponse->total_pages>1){
-                
+                    error_log('Requesting more result from more page starting...');
                     do{
                         $goNext=true;
                         $url='https://recherche-entreprises.api.gouv.fr/search?q='.($annuaire->nom_complet??$annuaire->dirigeant).'&page='.(++$newResponse->page).'&per_page=20';
@@ -499,14 +501,15 @@ class CompanyComponent extends CrmCompany{
                                $goNext=false;
                             }
                        }
-                    }while($newResponse->page<$newResponse->total_pages && $goNext);
+                    }while($newResponse->page<$newResponse->total_pages && $goNext && $newResponse->page<10 && count($annuaire->matching_etablissements)<=$annuaire->nombre_etablissements);
                 }
-                
+                error_log('Requesting more result from more page ending...');
             }
-            
+            error_log('Requesting more result ending...');
         } catch (Exception $e) {
             $this->log($e, $e->getMessage());
         }finally{
+            error_log('Completed getCompanyFromAnnuaire');
             $this->companyCollection->currentCompany['annuaire']=$annuaire??[];
             return $this;
         }

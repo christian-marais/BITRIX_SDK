@@ -51,6 +51,16 @@ class WebController
        
     }
 
+    public function page404()
+    {   if(file_exists(__DIR__.'/404.html')) {
+            return new Response(file_get_contents(__DIR__.'/404.html'), 404);
+        }
+        return new JsonResponse([
+            'status' => 'error',
+            'message' => 'Page not found'
+        ], 404);
+    }
+
     public function viewBlank(Request $request,...$params): Response
     {  
         // Récupérer les données de l'entreprise
@@ -62,6 +72,11 @@ class WebController
         $content = ob_get_clean();
 
         return new Response($content);
+    }
+    public function home(): Response
+    {  
+        return new RedirectResponse(
+            BASE_URL.'company/', 302);
     }
 
     public function webhook(Request $request,...$params): Response

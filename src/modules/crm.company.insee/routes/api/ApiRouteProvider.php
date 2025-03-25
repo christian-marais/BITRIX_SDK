@@ -58,7 +58,7 @@ class ApiRouteProvider
 
         // Route pour récupérer une entreprise
         $this->routes->add('api_get_company', new Route(
-            'api/company/{siret}/',
+            'api/company/{siret}',
             [
                 '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::getCompany',
                 'methods' => ['GET'],
@@ -71,6 +71,16 @@ class ApiRouteProvider
         ));
 
         $this->routes->add('api_get_company', new Route(
+            'api/companies/siret',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::getCompanies',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+
+        $this->routes->add('api_get_annuaire', new Route(
             'api/annuaire/{siret}',
             [
                 '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::getAnnuaire',
@@ -129,6 +139,8 @@ class ApiRouteProvider
                 'webhook' => $this->hashedWebhook??''
             ]
         ));
+
+        
 
     }
    

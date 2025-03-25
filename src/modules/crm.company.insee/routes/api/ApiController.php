@@ -20,47 +20,91 @@ class ApiController
     }
     public function saveCompany(Request $request,...$params): Response
     {
+        error_log('Starting saveCompany');
         try {
             extract($params);
-            $company=$this->companyComponent->setCustomSiret($siret)->getCompanyFromAnnuaire()->getCompanyFromInsee()->getCompanyFromBodacc()->setBodaccCustomRecord()->getCollection()->currentCompany;
+            if(!isset($siret) && !is_numeric($siret)){
+                throw new \Exception('A nuemric Siret is required');
+            }
+            error_log('Processing saveCompany...');
+            $company=$this->companyComponent->setCustomSiret($siret)->getCompanyFromInsee()->getCompanyFromAnnuaire()->getCollection()->currentCompany;
+            $fields=$this->companyComponent->getCollection()->currentCompany["fields"]["bitrix"];
             
-
-            if(!empty($etablissements=$company["annuaire"]?->matching_etablissements)){
-                $fields=$this->companyComponent->getCollection()->currentCompany["fields"]["bitrix"];
+            if($company["annuaire"]?->siege->siret==$siret){
                 $company["saveToB24"]=[
-                    $fields['siret']=>$etablissements[0]?->siret,
-                    $fields['codePostale_mention']=>$etablissements[0]?->code_postale,
-                    $fields['commune_mention']=>$etablissements[0]?->libelle_commune,
-                    $fields['rue_mention']=>$etablissements[0]?->adresse,
-                    $fields['ville_mention']=>$etablissements[0]?->libelle_commune,
-                    $fields['siren']=>substr($etablissements[0]?->siret,0,9),
-                    $fields['nom']=>$etablissements[0]?->nom_complet,
-                    $fields['activite']=>$etablissements[0]?->activite_principale,
-                    $fields['naf']=>$etablissements[0]?->activite_principale.' '.$etablissements[0]?->libelle_activite_principale,
+                    $fields['siret']=>$company["annuaire"]?->siege->siret??'',
+                    $fields['siren']=>substr($company["annuaire"]?->siege->siret,0,9)??'',
+                    $fields['codePostale_mention']=>$company["annuaire"]?->siege->code_postal??'',
+                    $fields['commune_mention']=>$company["annuaire"]?->siege->libelle_commune??'',
+                    $fields['rue_mention']=>($company["annuaire"]?->siege->numero_voie.' '.$company["annuaire"]?->siege->type_voie.' '.$company["annuaire"]?->siege->libelle_voie)??'',
+                    $fields['ville_mention']=>$company["annuaire"]?->siege?->libelle_commune??'',
+                    $fields['nom']=>$company["annuaire"]?->nom_complet??'',
+                    $fields['activite']=>$company["annuaire"]?->activite_principale??'',
+                    $fields['naf']=>($company["annuaire"]?->activite_principale.' '.$company["annuaire"]?->libelle_activite_principale)??'',
                     $fields['ca']=>'',
-                    $fields["adresse"]=>$etablissements[0]?->adresse,
+                    $fields["adresse"]=>$company["annuaire"]?->adresse??'',
                     $fields['zoneNS2B_enum']=>'',
                     $fields['statut_enum']=>'',
                     $fields['activite_enum']=>'',
                     $fields['email']=>'',
                     $fields['tel']=>'',
                     $fields['famille_enum']=>'',
-                    $fields['nom_mention']=>$etablissements[0]?->nom_complet,
-                    $fields['forme_juridique_mention']=>$etablissements[0]?->forme_juridique,
+                    $fields['nom_mention']=>$company["annuaire"]?->nom_complet??'',
+                    $fields['forme_juridique_mention']=>$company["annuaire"]?->siege->forme_juridique??'',
                     $fields['ca_mention']=>'',
-                    $fields['siret_mention']=>$etablissements[0]?->siret,
-                    $fields['naf_mention']=>$etablissements[0]?->activite_principale.' '.$etablissements[0]?->libelle_activite_principale,
+                    $fields['siret_mention']=>$company["annuaire"]?->siret??'',
+                    $fields['naf_mention']=>($company["annuaire"]?->activite_principale.' '.$company["annuaire"]?->libelle_activite_principale)??'',
                     $fields['rcs_mention']=>'',
                     $fields['tva_intracommunautaire_mention']=>'',
-                    $fields['date_clôture_mention']=>$etablissements[0]?->activite_principale,
+                    $fields['date_clôture_mention']=>$company["annuaire"]?->activite_principale??'',
                     $fields['identifiant_association_mention']=>'',
                     $fields['pappersUrl_mention']=>'',
                 ];
+            }elseif(!empty($etablissements=$company["annuaire"]?->matching_etablissements)){
+                
+                foreach($etablissements as $etablissement){
+                    if($etablissement?->siret==$siret){
+                        $company["saveToB24"]=[
+                            $fields['siret']=>$etablissement?->siret??'',
+                            $fields['codePostale_mention']=>$etablissement?->code_postale??'',
+                            $fields['commune_mention']=>$etablissement?->libelle_commune??'',
+                            $fields['rue_mention']=>$etablissement?->adresse??'',
+                            $fields['ville_mention']=>$etablissement?->libelle_commune??'',
+                            $fields['siren']=>substr($etablissement?->siret,0,9)??'',
+                            $fields['nom']=>$etablissement?->nom_complet??'',
+                            $fields['activite']=>$etablissement?->activite_principale??'',
+                            $fields['naf']=>($etablissement?->activite_principale.' '.$etablissement?->libelle_activite_principale)??'',
+                            $fields['ca']=>'',
+                            $fields["adresse"]=>$etablissement?->adresse??'',
+                            $fields['zoneNS2B_enum']=>'',
+                            $fields['statut_enum']=>'',
+                            $fields['activite_enum']=>'',
+                            $fields['email']=>'',
+                            $fields['tel']=>'',
+                            $fields['famille_enum']=>'',
+                            $fields['nom_mention']=>$etablissement?->nom_complet??'',
+                            $fields['forme_juridique_mention']=>$etablissement?->forme_juridique??'',
+                            $fields['ca_mention']=>'',
+                            $fields['siret_mention']=>$etablissement?->siret??'',
+                            $fields['naf_mention']=>($etablissement?->activite_principale.' '.$etablissement?->libelle_activite_principale)??'',
+                            $fields['rcs_mention']=>'',
+                            $fields['tva_intracommunautaire_mention']=>'',
+                            $fields['date_clôture_mention']=>$etablissements?->activite_principale??'',
+                            $fields['identifiant_association_mention']=>'',
+                            $fields['pappersUrl_mention']=>'',
+                        ];
+                    }
+                }
+                
                 unset($company["saveToB24"][""]);
+            }else{
+                throw new \Exception('Siret not found in annuaire');
             }
+            error_log('Success response saveCompany...');
             $result=$this->companyComponent->addCompanyToBitrix($company["saveToB24"]);
             return new JsonResponse($result,200);
         } catch (\Exception $e) {
+            error_log('Error response saveCompany...');
             return new JsonResponse([
                 'status' => 'error',
                 'message' => $e->getMessage(),
@@ -109,6 +153,48 @@ class ApiController
                 'message' => $e->getMessage()
             ], 404);
         }
+    }
+
+    public function getCompanies(Request $request, ...$params): Response
+    {
+        try {
+            extract($params);
+            $posts = json_decode($request->getContent(), true);
+            // error_log(print_r($posts, true)); // Log the received data
+            $batch=[];
+            if(empty($posts[0]["method"])||!isset($posts[0]["params"])||empty($posts[0]["name"]))
+            {
+                throw new \Exception('Methode, params ou name manquants ');
+            }
+            foreach($posts as $post)
+            {
+                
+                $batch[$post["name"]]=$post["method"]."?".http_build_query($post["params"]);
+            }
+
+            $result=$B24->core->call('batch',[
+                "cmd"=>$batch
+            ])->getResponseData()->getResult()["result"];
+            $ids=[];
+            foreach($result as $key => $value) {
+                if(!empty($value[0]["ID"])){
+                    $ids[$key]=$value[0]["ID"];
+                }
+                
+            }
+            return new JsonResponse(
+                [
+                    'status' => 'success',
+                    'data'=>$ids
+                ],200)
+                ;
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 404);
+        }
+         
     }
     public function getAnnuaire(Request $request, ...$params): Response
     {
@@ -188,6 +274,16 @@ class ApiController
                 'message' => $e->getMessage()
             ], 400);
         }
+    }
+
+    public function page404()
+    {   if(file_exists(__DIR__.'/404.html')) {
+            return new Response(file_get_contents(__DIR__.'/404.html'), 404);
+        }
+        return new JsonResponse([
+            'status' => 'error',
+            'message' => 'Page not found'
+        ], 404);
     }
 
     public function getWebhook(Request $request,...$params): Response
