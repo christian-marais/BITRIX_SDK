@@ -64,6 +64,8 @@
     </style>
 </head>
 <body>
+<?php $domain ='http://'.$request->server->get('HTTP_HOST');$baseUrl=$domain.$request->server->get('SCRIPT_NAME');?>
+    
     <?php include dirname(__FILE__,2) . '/snippets/buttonsBar.php'; ?>
     <div class="container py-4">
         <div class="row mb-4">
@@ -153,7 +155,7 @@
                             <div class="info-label">Nom</div>
                             <div class="info-value"><?php echo htmlspecialchars($etablissement->nom_complet); ?></div>
                             <div class="info-label">
-                                <button class="btn btn-primary" onclick="addCompany('<?=$etablissement->siret?>')" data-bs-toggle="modal" data-bs-target="#addCompanyModal">Ajouter la société</button>
+                                <button id="showCompany<?=$etablissement->siret?>" data-siret="<?=$etablissement->siret?>" class="btn btn-primary addCompany" data-bs-toggle="modal" data-bs-target="#addCompanyModal">Recherche ...</button>
                             </div>
                         </div>
                         <div class="info-row">
@@ -199,9 +201,11 @@
                             <br>
                             <small class="text-muted">Né(e) en <?php echo htmlspecialchars($dirigeant->annee_de_naissance); ?></small>
                         </div>
-                        <div class="info-label">     
-                            <button class="btn btn-primary" onclick="window.location.href=''">Ajouter le contact</button>
-                        </div>
+                        <?php if(empty($company["ID"])): ?>
+                            <div class="info-label">
+                                <button class="btn btn-primary" id="contact<?= $company["ID"] ?>" data-nom="<?php echo htmlspecialchars($dirigeant->nom); ?>" data-qualite="<?php echo htmlspecialchars($dirigeant->qualite); ?>" data-prenom="<?php echo htmlspecialchars($dirigeant->prenom); ?>" onclick="addContact('<?=$companyId?>')">Ajouter le contact</button>
+                            </div>
+                        <?php endif;?>
                     </div>
                     <?php endif;?>
                   
@@ -256,6 +260,179 @@
         </div>
         <?php endif; ?>
     </div>
-  
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
+    <script src="../../../base/assets/js/slider.js"></script>
+    <script>
+
+        function addCompany(siret) {
+            data= $.ajax({
+                url: '<?=$baseUrl?>/api/company/'+siret+'/save',
+                method: 'GET',
+                success: function(data) {
+                    if(data.status==='success'){
+                        uri='<?=$domain?>/crm/company/details/'+data.result+'/';
+                        querySelector='#showCompany'+siret;
+                        const btn = document.getElementById('showCompany'+siret);
+                        btn.innerText='Entreprise ajoutée';
+                        btn.style.backgroundColor='green';
+                        btn.style.color='white';
+                        setTimeout(function() {
+                            btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                            btn.innerText='Voir';
+                            btn.style.backgroundColor='grey';
+                        }, 2500);
+                    }
+                }
+            });
+        }
+
+        async function addContact(companyId) {
+            if(companyId===undefined){
+                return;
+            }
+            contact=document.getElementById('contact'+companyId);
+            const name=contact.getAttribute('data-name');
+            const qualite=contact.getAttribute('data-qualite');
+            const first_name=contact.getAttribute('data-prenom');
+            const response =fetch('<?=$baseUrl?>/api/company/'+companyId+'/contact/save',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    LAST_NAME: name,
+                    NAME: first_name,
+                    POST: qualite,
+                    COMPANY_ID: companyId
+                })
+            });
+            data= await response.json();
+            if(data.status==='success'){
+                const btn = document.getElementById('contact'+companyId);
+                querySelector='#showContact'+companyId;
+                uri='<?=$domain?>/crm/contact/details/'+result+'/';
+                btn.innerText='Contact ajouté';
+                btn.style.backgroundColor='green';
+                btn.style.color='white';
+                setTimeout(function() {
+                    btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                    btn.innerText='Voir';
+                    btn.style.backgroundColor='grey';
+                }, 2500);
+            }
+        }
+    </script>
+    <script>
+        let siretField="<?=$company["fields"]["bitrix"]["siret"]??''?>"
+        let isAborted = false;
+        let activeControllers = {}; // Store active controllers for each unique request
+        let active='';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            let sirets=[]
+            btns=document.querySelectorAll('.addCompany')
+            btns.forEach((element) => {
+                sirets.push(element.getAttribute('data-siret'))
+            });
+            showCompany(sirets);
+        });
+
+        function showCompany(sirets) {
+            const requestKey = sirets.join(',');
+            active=requestKey;
+        
+            // Abort the previous request if it exists
+            Object.keys(activeControllers).forEach((key) => { 
+                    activeControllers[key].abort();
+                    console.log(`Aborting previous request for: ${key}`);
+                    delete activeControllers[key];
+            })
+            // Create a new AbortController for the current request
+            const abortController = new AbortController();
+            activeControllers[requestKey] = abortController; // Store the controller
+            const signal = abortController.signal;
+        
+            const batch = sirets.map(siret => ({
+                method: 'crm.company.list',
+                name: siret,
+                params: {
+                    ["filter[" + siretField + "]"]: siret
+                }
+            }));
+        
+            console.log('Payload:', JSON.stringify(batch));
+        
+            try {
+                const go=true;
+                setTimeout(async() => {
+                    if(!active==requestKey){
+                        go=false;
+                        return;
+                    }
+                    const response = await fetch('<?=$baseUrl?>/api/companies/siret', {
+                    signal,
+                    method: 'POST',
+                    body: JSON.stringify(batch)
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('HTTP error', response.status, errorText);
+                } else {
+                    const data = await response.json();
+                    console.log('datas',data.data)
+                    if(data.status==="success"){
+                        datas=data.data;
+                        
+                        if(typeof datas==="object"){
+                            sirets.map(siret => {
+                                const button=document.getElementById('showCompany'+siret);
+                                button.innerText='Ajouter la société';
+                                button.style.backgroundColor='#0D6EFD';
+                                button.style.color='white';
+                                button.setAttribute('onclick', "addCompanyToBitrix('"+siret+"')");
+                            })
+                            for (let [key,value] of Object.entries(datas)) {
+                                if (datas.hasOwnProperty(key)) {
+                                    if(datas[key]!=null){
+                                        url='<?=$domain?>/crm/company/details/'+value+'/';
+                                        querySelector='#showCompany'+key;
+                                        const button=document.getElementById('showCompany'+key);
+                                        button.innerText='Voir la société';
+                                        button.style.backgroundColor='#0D6EFD';
+                                        button.style.color='white';
+                                        button.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+url+"')");
+                                    }
+                                    
+                                }
+                            }
+                        }else{
+                            sirets.map(siret => {
+                                const button=document.getElementById('showCompany'+siret);
+                                button.innerText='Ajouter la société';
+                                button.style.backgroundColor='#0D6EFD';
+                                button.style.color='white';
+                                button.setAttribute('onclick', "addCompanyToBitrix('"+siret+"')");
+                            })
+                        }
+                    }
+                    console.log('Response data:', data);
+                }
+        
+                }, 2000);
+                
+                // Check if the request was aborted before processing the response
+        
+                
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Fetch request was aborted for:', requestKey);
+                } else {
+                    console.error('Fetch error:', error);
+                }
+            } 
+        }
+    </script>
 </body>
 </html>

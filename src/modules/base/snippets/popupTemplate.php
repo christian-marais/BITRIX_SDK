@@ -1,4 +1,5 @@
-<div id="webhookPopupOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 998; display: flex; justify-content: center; align-items: center;">
+<?php _error_log(__FILE__.': loaded...');?>
+<div id="webhookPopupOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 100; display: flex; justify-content: center; align-items: center;">
     <div id="webhookPopup" style="width: 450px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 999; padding: 25px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; color: #333; font-size: 1.5em;">Configuration du Webhook</h3>
@@ -91,7 +92,7 @@
                 showMessage(data.message || 'Webhook ' + action + ' avec succès', '#00C851');
                 // Changer le bouton de fermeture
                 const closeBtn = document.querySelector('button[onclick="closePopup()"]');
-                setTimeout(() => { window.location.href = window.location.pathname; }, 5000);
+                setTimeout(() => { window.location.href = '/src/modules/crm.company.insee/index.php/company/'; }, 5000);
             } else {
                 input.style.border = '1px solid #ff4444';
                 showMessage(data.message || 'Webhook invalide', '#ff4444');
@@ -136,3 +137,4 @@
     // Fermer en cliquant en dehors de la popup
     document.getElementById('webhookPopupOverlay').addEventListener('click', closePopup);
 </script>
+<?php _error_log(__FILE__.': loaded...endfile'); ?>

@@ -3,9 +3,6 @@
     <div class="card-body">
         <?php if(!empty($company['SIREN']) && $display=true): ?>
             <div class="card-title d-flex justify-content-end " >
-                <button id="updateCompany" class="btn btn-primary mx-2" >
-                    <i class="bi bi-file-text" style="margin-right: 5px;"></i>Importer l'Entreprise
-                </button>
                 <button id="alerteBodacc" class="btn btn-primary mx-2" >
                     <i class="bi bi-file-text" style="margin-right: 5px;"></i>Alerte bodacc
                 </button>
@@ -33,11 +30,10 @@
                     </a>
                 <?php endif;?>
                 <div class="btn-group" role="group" aria-label="Actions">
-                    <button type="button" class="btn btn-primary" id="saveWebhook">Sauvegarder le Webhook</button>
-                    <button type="button" class="btn btn-success" id="addCompany">Ajouter l'entreprise</button>
-                    <button type="button" class="btn btn-info" id="viewCompany" style="display: none;">Consulter l'entreprise</button>
+                    <a href="/src/modules/crm.company.insee/index.php/webhook" type="button" class="btn btn-primary" id="saveWebhook">Configurer le Webhook</a>
                 </div>
             </div>
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
             $(document).ready(function() {
                 // Fonction pour sauvegarder le webhook

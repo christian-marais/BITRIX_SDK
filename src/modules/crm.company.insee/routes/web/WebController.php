@@ -51,7 +51,7 @@ class WebController
        
     }
 
-    public function page404()
+    public function page404(Request $request,...$params): Response
     {   if(file_exists(__DIR__.'/404.html')) {
             return new Response(file_get_contents(__DIR__.'/404.html'), 404);
         }
@@ -90,7 +90,7 @@ class WebController
     }
 
     
-    public function saveWebhook(Request $request): Response
+    public function saveWebhook(Request $request,...$params): Response
     {
         $success = $this->webhookManager->save($request);
 
@@ -114,7 +114,7 @@ class WebController
         }
     }
 
-    public function getWebhook(): Response
+    public function getWebhook(Request $request,...$params): Response
     {
         $response = $this->webhookManager->getWebhook();
         return new JsonResponse(
@@ -122,9 +122,5 @@ class WebController
             status:200
         );
     }
-
-
-  
-
 
 }

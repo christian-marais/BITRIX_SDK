@@ -19,10 +19,14 @@ class WebRouteProvider
     private $company;
 
     public function __construct()
-    {
+    { 
+        _error_log("Starting router...."); 
         $this->routes = new RouteCollection();
+        _error_log("populating route with company");
         $this->populateCompany();
+        _error_log("processing routing...");
         $this->defineRoutes();
+        _error_log("closing router...");
     }
 
     private function populateCompany(){

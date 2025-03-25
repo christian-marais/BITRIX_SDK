@@ -18,6 +18,29 @@ class ApiController
     ) {
         $this->webhookManager = new WebhookManager($this->db);
     }
+
+    public function saveContact(Request $request,...$params): Response
+    {
+        error_log('Starting saveContact...');
+        try {
+            extract($params);
+            $requestBody=json_decode($request->getContent(), true);
+            error_log('Processing saveContact...');
+            $result=$B24->core->call('crm.contact.add',[
+                "fields"=>$requestBody
+            ])->getResponseData()->getResult()["result"];
+            return new JsonResponse($result,200);
+        } catch (\Exception $e) {
+            error_log('Error response saveContact...');
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'result'=>$result
+            ], 400);
+        }
+    }
+
+
     public function saveCompany(Request $request,...$params): Response
     {
         error_log('Starting saveCompany');
@@ -274,16 +297,6 @@ class ApiController
                 'message' => $e->getMessage()
             ], 400);
         }
-    }
-
-    public function page404()
-    {   if(file_exists(__DIR__.'/404.html')) {
-            return new Response(file_get_contents(__DIR__.'/404.html'), 404);
-        }
-        return new JsonResponse([
-            'status' => 'error',
-            'message' => 'Page not found'
-        ], 404);
     }
 
     public function getWebhook(Request $request,...$params): Response

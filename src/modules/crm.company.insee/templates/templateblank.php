@@ -17,7 +17,7 @@
             padding: 2rem;
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 100;
         }
         .search-title {
             color: #2c3e50;
@@ -104,7 +104,7 @@
        
     </style>
 </head>
-<body>
+<body> 
     <div class="search-container mb-4">
         <div class="container">
             <h1 class="search-title text-center">Annuaire d'Enterprises</h1>
@@ -122,7 +122,7 @@
             </div>
         </div>
     </div>
-    <?php $domain ='http://'.$request->server->get('HTTP_HOST');$baseUrl=$domain.$request->server->get('SCRIPT_NAME');?>
+    <?php $domain ='http://'.$request?->server->get('HTTP_HOST');$baseUrl=$domain.$request?->server->get('SCRIPT_NAME');?>
     <div class="container results-container">
         <div id="results" class="row">
         </div>
@@ -135,14 +135,14 @@
     <script src="../../../base/assets/js/slider.js"></script>
     <script>
         
-       let siretField="<?=$company["fields"]["bitrix"]["siret"]??''?>"
-       let isAborted = false;
-       let activeControllers = {}; // Store active controllers for each unique request
-       let active='';
-       async function showCompany(sirets) {
-           const requestKey = sirets.join(',');
-           active=requestKey;
-       
+        let siretField="<?=$company["fields"]["bitrix"]["siret"]??''?>"
+        let isAborted = false;
+        let activeControllers = {}; // Store active controllers for each unique request
+        let active='';
+        function showCompany(sirets) {
+            const requestKey = sirets.join(',');
+            active=requestKey;
+        
             // Abort the previous request if it exists
             Object.keys(activeControllers).forEach((key) => { 
                     activeControllers[key].abort();
@@ -243,19 +243,18 @@
                 success: function(data) {
                     if(data.status==='success'){
                         const btn = document.getElementById('showCompany'+siret);
+                        uri='<?=$domain?>/crm/company/details/'+data.result+'/';
                         btn.innerText='Entreprise ajoutée';
                         btn.style.backgroundColor='green';
                         btn.style.color='white';
                         setTimeout(function() {
-                            btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+url+"')");
+                            btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
                             btn.innerText='Voir';
                             btn.style.backgroundColor='grey';
                         }, 2500);
                     }
                 }
             });
-            
-            
         }
 
     </script>

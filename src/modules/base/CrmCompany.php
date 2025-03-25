@@ -103,7 +103,7 @@ abstract class CrmCompany extends Base{
             $database->createDatabase('crmcompanyinsee.db');
         }
 
-        if ($database->entityExists('company') || $database->createEntity('company')) {
+        if (!$database->entityExists('company')) {
             $companyDbFields = $database->listFields('company');
             $companyFields = $this->fields['bitrix'];
             $fields = [];
