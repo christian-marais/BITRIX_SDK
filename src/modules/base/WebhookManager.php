@@ -108,7 +108,6 @@ class WebhookManager extends ServiceBuilderFactory
                     );
                     
                 }
-                
                 break;
         }
         

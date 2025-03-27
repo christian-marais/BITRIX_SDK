@@ -124,7 +124,7 @@ class ContactActivityComponent extends CrmActivity {
                 }
                 
                 $this->getResponsible($activity['RESPONSIBLE_ID']);
-                unset($activities[$key]['SETTINGS']);
+                unset($activityCollection->activities[$key]['SETTINGS']);
                 $activityCollection->activities[$key]['responsible']=$this->activityCollection->responsible[0]??null;
                 $responsibles[$activity['RESPONSIBLE_ID']]=$this->activityCollection->responsible[0]??null;
             }

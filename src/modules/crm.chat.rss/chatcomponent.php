@@ -1,16 +1,28 @@
 <?php
 declare(strict_types=1);
-namespace NS2B\SDK\MODULES\CRM\MAIL\LIST;
+namespace NS2B\SDK\MODULES\CRM\CHAT\RSS;
 use \Exception;
-use NS2B\SDK\MODULES\BASE\CrmActivity;
+use NS2B\SDK\MODULES\BASE\Base;
 
 
-class ContactActivityComponent extends CrmActivity{
-
+class ChatComponent extends Base{
+    
+    public function __construct(
+        private $chatCollection =new \stdClass,
+        protected $errorMessages=[],
+        
+    ){
+        parent::__construct();
+        $this->chatCollection->rss=[
+            "cert"=>"https://www.cert.ssi.gouv.fr/alerte/feed/",
+            "sfr"=>"https://www.sfr.fr/alerte/rss/",
+            "france-interieur"=>"https://www.franceinterieur.fr/alerte/rss/",
+            "gouv.fr"=>"https://www.gouv.fr/alerte/rss/"
+        ];
+    }
     
 
     public function getActivities() {
-     
         try {
             if(!$this->hasScope('crm')){
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
@@ -23,13 +35,12 @@ class ContactActivityComponent extends CrmActivity{
                     'PROVIDER_TYPE_ID' => 'EMAIL',
                     'OWNER_ID' => 3,
                     'OWNER_TYPE_ID' => 1,
-                    
                 ]
             ];
-            !empty($_GET['subject']) ? $countParams['filter']['%SUBJECT'] = htmlspecialchars($_GET['subject']) : '';
-            !empty($_GET['startDate']) ? $countParams['filter']['>=START_TIME'] = htmlspecialchars($_GET['startDate']) : '';
-            !empty($_GET['endDate']) ? $countParams['filter']['<=END_TIME'] = htmlspecialchars($_GET['endDate']) : '';
-            !empty($_GET['completed']) ? $countParams['filter']['COMPLETED'] = htmlspecialchars($_GET['completed']) : '';
+            $_GET['subject'] ? $countParams['filter']['%SUBJECT'] = htmlspecialchars($_GET['subject']) : '';
+            $_GET['startDate'] ? $countParams['filter']['>=START_TIME'] = htmlspecialchars($_GET['startDate']) : '';
+            $_GET['endDate'] ? $countParams['filter']['<=END_TIME'] = htmlspecialchars($_GET['endDate']) : '';
+            $_GET['completed'] ? $countParams['filter']['COMPLETED'] = htmlspecialchars($_GET['completed']) : '';
             // Récupérer le nombre total
             $totalCount = $this->B24
                 ->core
@@ -97,6 +108,16 @@ class ContactActivityComponent extends CrmActivity{
             $errorMessages=$this->errorMessages;
             $activityCollection= $this->activityCollection;
             include dirname(__FILE__) . '/template.php';
+    }
+
+    public function getCollection(){
+        return $this->chatCollection;
+    }
+    public function getRss($url=null){
+        if(empty($url??=$this->chatCollection->rss['cert'])) return null;
+        $content=file_get_contents($url);
+        $xml=new \SimpleXMLElement($content);
+        return $xml;
     }
   
 }

@@ -16,5 +16,11 @@ $NSContactEventActivity
     ->getActivities()
     ->renderActivitiesList();
 
+    function _error_log($log){
+        if(defined('DEBUG'))
+       {
+           error_log($log);
+       }}
+       
 // Afficher les activités pour débogage
 ?>

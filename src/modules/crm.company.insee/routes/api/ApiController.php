@@ -1,16 +1,19 @@
 <?php
 namespace NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API;
 
+use Bitrix24\SDK\Services\ServiceBuilder;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use NS2B\SDK\MODULES\BASE\WebhookManager;
 use NS2B\SDK\DATABASE\DatabaseSQLite;
 use NS2B\SDK\MODULES\CRM\COMPANY\INSEE\CompanyComponent;
+use Symfony\Component\HttpClient\HttpClient;
 
 class ApiController
 {   
     private WebhookManager $webhookManager;
+
     public function __construct(
         private CompanyComponent $companyComponent=new CompanyComponent(),
         private DatabaseSQLite $db=new DatabaseSQLite(),
@@ -38,6 +41,59 @@ class ApiController
                 'result'=>$result
             ], 400);
         }
+    }
+
+    public function bodaccAlertsCompany(Request $request,...$params): Response
+    {   
+        error_log('Starting bodaccAlertsCompany...');
+        try {
+            extract($params);
+            $sirets=$request->query->all();
+            if(!isset($sirets) && !is_array($sirets)){
+                throw new \Exception('An array of Sirets is required');
+            }
+            $fields=($this->companyComponent?->getCollection()->currentCompany['fields'])['bitrix']??[];
+            $company=$B24->getCRMScope()->company();
+            $filter=[">".$fields["siret"]=>0];
+            $select=["ID",$fields["siret"]];
+            $start=0;
+            $companies=[];
+            $sirets=[];
+            do{
+                $result=$company->list(
+                    select:$select,
+                    filter:$filter,
+                    startItem:$start
+                )->getCompanies();
+                foreach($result as $comp){
+                    $companies[]=[
+                        $comp->__get($fields["siret"])=>$comp->__get('ID')
+                    ];
+                    $sirens[]=str_replace(" ","",substr($comp->__get($fields["siret"]),0,9));
+                }
+                $start=count($companies);
+            }while($start<$company->countByFilter($filter));
+            error_log('Processing bodaccAlertsCompany...');
+            $company=$this->companyComponent->getBodaccAlerts($sirens)->getCollection()->currentCompany;
+            $alertes=$company["bodaccAlerts"]??[];
+            if(!is_array($alertes)||empty($alertes)){
+                error_log('No bodacc alerts found');
+                throw new \Exception('No alerts found');
+            }
+            error_log('Ending bodaccAlertsCompany...');
+            return new JsonResponse([
+                'status'=>'success',
+                'result'=>$alertes,
+            ],200);
+        } catch (\Exception $e) {
+            error_log('Error response bodaccAlertsCompany...');
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'result'=>$alertes
+            ], 400);
+        }
+
     }
 
 

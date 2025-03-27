@@ -40,7 +40,7 @@ class ApiRouteProvider
 
     private function defineRoutes():void
     {
-        // Route pour ajouter une entreprise
+        // Route api pour ajouter une entreprise dans bitrix
         $this->routes->add('api_add_company', new Route(
             'api/company/{siret}/save',
             [
@@ -54,9 +54,21 @@ class ApiRouteProvider
             ]
         ));
 
-
-
-        // Route pour récupérer une entreprise
+        // Route api pour modifier une entreprise dans bitrix
+        $this->routes->add('api_bodacc_alerts_company', new Route(
+            'api/company/bodacc-alerts',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::bodaccAlertsCompany',
+                'methods' => ['GET'],
+                'company' => $this->company,
+                'B24' => $this->B24,
+            ],
+            [
+                'siret' => '\d{14}'
+            ]
+        ));
+        
+        // Route api pour récupérer une entreprise de bitrix à partir du siret
         $this->routes->add('api_get_company', new Route(
             'api/company/{siret}',
             [
@@ -70,6 +82,25 @@ class ApiRouteProvider
             ]
         ));
 
+        /**
+         * Route api pour récupérer les entreprises de bitrix à partir d'un array de sirets
+         * 
+         * Body=[{
+             *      "method": "crm.company.list",
+             *      "name": "87942768000019",
+             *     "params": {
+             *        "filter[UF_CRM_1713268514492]": "87942768000019"
+             *   }
+             *},
+             *{
+             *   "method": "crm.company.list",
+             *  "name": "52075381500015",
+             * "params": {
+             *    "filter[UF_CRM_1713268514492]": "52075381500015"
+             *}
+             *
+        *   }]
+        */
         $this->routes->add('api_get_company', new Route(
             'api/companies/siret',
             [
@@ -80,6 +111,9 @@ class ApiRouteProvider
             ]
         ));
 
+        
+        //Route api pour récupérer une entreprise de l'annuaire à partir du siret
+         
         $this->routes->add('api_get_annuaire', new Route(
             'api/annuaire/{siret}',
             [
@@ -93,7 +127,7 @@ class ApiRouteProvider
             ]
         ));
 
-        // Route pour mettre à jour une entreprise
+        // Route api pour mettre à jour une entreprise à partir du siret
         $this->routes->add('api_update_company', new Route(
           'api/company/{siret}/update',
             [
@@ -108,7 +142,7 @@ class ApiRouteProvider
         ));
       
 
-        // Route pour récupérer le webhook
+        // Route api pour récupérer le webhook
         $this->routes->add('api_get_webhook', new Route(
             '/api/webhook',
             [
@@ -119,6 +153,7 @@ class ApiRouteProvider
                 'B24' => $this->B24
             ]
         ));
+        // Route api pour sauvegarder le webhook
         $this->routes->add('api_save_webhook', new Route(
             '/api/webhook/save',
             [

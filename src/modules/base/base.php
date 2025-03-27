@@ -23,6 +23,7 @@ abstract class Base{
     protected $currentScope;
     protected $requiredScopes;
     protected $B24;
+    private $HttpOption;
 
     public function __construct($webhook=null) {
         $database = new Database('database');
@@ -38,6 +39,11 @@ abstract class Base{
             ->setCurrentPage();
     
     }
+
+    public function getHttpOption(){
+        return $this->HttpOption;
+    }
+
     public function setAction(){
         $this->action[]=htmlspecialchars(strip_tags($_GET['action']??''));
         return $this;
@@ -134,12 +140,14 @@ abstract class Base{
      * @param string $message
      * @return bool
      */
-    protected function notify(string $message){
+    public function notify(string $message,$user=null){
+        $user = 
+        (method_exists($USER, 'getContext') && $USER->getContext()?->getUserId())?
+        $user??$USER->getContext()?->getUserId():
+        $user;
         if(
             !empty($this->B24) &&
-            !empty($USER) &&
-            method_exists($USER, 'getContext') &&
-            $user=$USER->getContext()?->getUserId()
+            !empty($user) 
         ){
             return $this->B24->core->call('user.notify.personal.add', [
                 'USER_ID' => (int) $user,
@@ -147,6 +155,32 @@ abstract class Base{
             ]);
         }
     }
+
+    /**
+     * Send a message in a chat im.recet.list
+     * @param string $message
+     * @return bool
+     */
+    public function chat(string $dialogId,string $message){
+        if(
+            !empty($this->B24) &&
+            !empty($USER) &&
+            method_exists($USER, 'getContext') &&
+            $user=$USER->getContext()?->getUserId()
+        ){
+            return $this->B24?->core->call('im.message.add', [
+                'DIALOG_ID' => (string) $dialogId,
+                'MESSAGE' => (string) $message,
+                'SYSTEM'=>'N',
+                'ATTACH'=>'',
+                'URL_PREVIEW'=>'Y',
+                "KEYBOARD" => "",
+                "MENU" => ""
+            ]);
+        }
+    }
+
+
 
     abstract protected function getCollection();
 

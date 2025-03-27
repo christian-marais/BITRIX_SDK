@@ -301,6 +301,11 @@ class CompanyComponent extends CrmCompany{
         return $this;
     }
 
+    /**
+     * Recherche l'entreprise sur l'annuaire entreprise
+     *
+     * @return $this
+     */
     public function getCompanyFromBodacc(){
         try {
             if(empty($this->companyCollection->currentCompany["SIREN"])||!is_numeric($this->companyCollection->currentCompany["SIREN"]))
@@ -515,23 +520,29 @@ class CompanyComponent extends CrmCompany{
         }
     }
     
-    public function getBodaccAlerts(array $sirets=[]):self{
-        
+    public function getBodaccAlerts(array $sirens=[]):self{
         try {
-            if(empty($sirets)||!is_array($sirets))
+            _error_log('Processing getBodaccAlerts');
+            if(empty($sirens)||!is_array($sirens))
                 throw new Exception('Il n\'est pas donné un tableau de sirets valide');
+
             $client = HttpClient::create($this->HttpOption);
             $date= "and dateparution=date'".(new DateTime('today'))->format('Ymd')."'";
             $date='';
-            $sirets=urlencode(implode(',',array_map(function ($siret){
-                return "'$siret'";
-            }, $sirets)));
-            $where=str_replace(" ","%20", "registre in $sirets $date");
-            $response = $client->request('GET', 'https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?where=registre%20in('.$sirets.')&limit=100&refine=familleavis_lib%3AProc%C3%A9dures%20collectives');
-            if ($response->getStatusCode() != 200) {
+            $sirens=implode(',',array_map(function ($siren){
+                return "'$siren'";
+            }, $sirens));
+
+            $where=str_replace(" ","%20", "registre in ($sirens $date)");
+            
+            $url='https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?where='.$where.'&limit=100&refine=familleavis_lib%3AProc%C3%A9dures%20collectives';
+            $response = $client->request('GET', $url);
+            
+            if ($response->getStatusCode() != 200)
                 throw new Exception('Erreur lors de la récupération des annonces bodacc entreprise');
-            }
+            
             $results=json_decode($response->getContent())->results;
+        
             foreach($results as $alerte){
                 $personnes=json_decode($alerte->listepersonnes??'{}');
                 $jugement=json_decode($alerte->jugement??'{}');
@@ -546,12 +557,14 @@ class CompanyComponent extends CrmCompany{
                     'typePersonne'=>$personnes->typePersonne??'',
                     'nom'=>$personnes->nom??'',
                     'dateparution'=>$alerte->dateparution??'',
-                    'url'=>$alerte->url_complete??''
+                    'url'=>$alerte->url_complete??'',
+                    'siren'=>$alerte->registre[0]??''
                 ];
             }
-           
+            _error_log('Ending getBodaccAlerts');
             $this->companyCollection->currentCompany['bodaccAlerts']=$alertes;
-        } catch (Exception $e) {
+        }catch (Exception $e) {
+            _error_log($e->getMessage());
             $this->log($e, $e->getMessage());
         }finally{
             return $this;
