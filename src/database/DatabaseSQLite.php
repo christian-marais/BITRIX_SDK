@@ -3,7 +3,7 @@ namespace NS2B\SDK\DATABASE;
 use NS2B\SDK\DATABASE\DatabaseInterface;
 use \PDO;
 use \PDOException;  
-class DatabaseSQLite implements DatabaseInterface {
+class DatabaseSqlite implements DatabaseInterface {
     protected $pdo;
     protected $database;
     protected $databasePath;

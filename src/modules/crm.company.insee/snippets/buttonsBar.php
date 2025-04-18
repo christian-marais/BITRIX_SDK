@@ -6,9 +6,9 @@
                 <button id="alerteBodacc" class="btn btn-primary mx-2" >
                     <i class="bi bi-file-text" style="margin-right: 5px;"></i>Alerte bodacc
                 </button>
-                <button id="bodacc" class="btn btn-primary mx-2" >
+                <a type="button" id="bodacc" class="text-white btn btn-primary mx-2" href="https://www.bodacc.fr/pages/annonces-commerciales/?q.registre=registre:<?=$company["SIREN"]?>&refine.familleavis=collective#resultarea">
                     <i class="bi bi-file-text " ></i>BODACC
-                </button>
+                </a>
                 <?php if(!empty($company['pappersUrl'])): ?>
                     <a class="text-white btn btn-info mx-2 " type="button" href="<?php echo htmlspecialchars($company['pappersUrl']); ?>" target="_blank">
                         <i class="bi bi-file-pdf" ></i>PAPPERS

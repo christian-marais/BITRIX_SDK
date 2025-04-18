@@ -264,6 +264,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
     <script src="../../../base/assets/js/slider.js"></script>
+    <script src="../../../base/assets/js/userDialogBox.js"></script>
+    
     <script>
 
         function addCompany(siret) {
@@ -338,6 +340,8 @@
             });
             showCompany(sirets);
         });
+
+        
 
         function showCompany(sirets) {
             const requestKey = sirets.join(',');

@@ -520,29 +520,26 @@ class CompanyComponent extends CrmCompany{
         }
     }
     
-    public function getBodaccAlerts(array $sirens=[]):self{
+    public function getBodaccAlerts(array $sirens=[],$request = null):self{
         try {
             _error_log('Processing getBodaccAlerts');
             if(empty($sirens)||!is_array($sirens))
                 throw new Exception('Il n\'est pas donné un tableau de sirets valide');
-
+            $whereDate=$request->query->get('wheredate')??'>=';
             $client = HttpClient::create($this->HttpOption);
-            $date= "and dateparution=date'".(new DateTime('today'))->format('Ymd')."'";
-            $date='';
+            $date= "and dateparution $whereDate date'".$request->query->get('date')??(new DateTime('today'))->format('Ymd')."'";
             $sirens=implode(',',array_map(function ($siren){
                 return "'$siren'";
             }, $sirens));
 
-            $where=str_replace(" ","%20", "registre in ($sirens $date)");
-            
-            $url='https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?where='.$where.'&limit=100&refine=familleavis_lib%3AProc%C3%A9dures%20collectives';
+            $where=str_replace(" ","%20", "registre in ($sirens)");
+            $url='https://bodacc-datadila.opendatasoft.com/api/explore/v2.1/catalog/datasets/annonces-commerciales/records?where='.$where.$date.'&limit=100&refine=familleavis_lib%3AProc%C3%A9dures%20collectives';
             $response = $client->request('GET', $url);
             
             if ($response->getStatusCode() != 200)
                 throw new Exception('Erreur lors de la récupération des annonces bodacc entreprise');
             
             $results=json_decode($response->getContent())->results;
-        
             foreach($results as $alerte){
                 $personnes=json_decode($alerte->listepersonnes??'{}');
                 $jugement=json_decode($alerte->jugement??'{}');

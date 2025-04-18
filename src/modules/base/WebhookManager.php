@@ -222,7 +222,7 @@ class WebhookManager extends ServiceBuilderFactory
         if ($this->getDecrypted()) {
             _error_log("Decrypted webhook: $this->webhook");
             $url=parse_url($this->webhook);
-            _error_log("Returning webhook: {$this->webhookCollection->webhook}");
+            _error_log('Returning webhook: '.(property_exists($this->webhookCollection,'webhook')?$this->webhookCollection->webhook:'false'));
             $this->webhookCollection->webhook= $url['scheme'] . '://' . $url['host'] . preg_replace('/[0-9a-z]/', '*', $url['path']??''); 
         }
         _error_log("No webhook found, returning empty");

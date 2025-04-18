@@ -13,13 +13,15 @@ spl_autoload_register(function ($class) {
         $relativePath=explode('\\', $relativeClass);
         switch(true){
             case count($relativePath)==4:
-                $path=$relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2].'/'.$relativePath[3].'.php';
+                $path=strtolower($relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2]).'/'.$relativePath[3].'.php';
                 break;
             case count($relativePath)>4:
-                $path=$relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2].'/'.implode('/', array_slice($relativePath, 3, count($relativePath))).'.php';
+                $path=strtolower($relativePath[0].'.'. $relativePath[1].'.'.$relativePath[2]).'/'.implode('/', array_slice($relativePath, 3, count($relativePath))).'.php';
                 break;
             default:
-                return;
+                $file= array_pop($relativePath);
+                $path=strtolower(implode('/', $relativePath)).'/'.$file.'.php';
+                break;
         }
         
         $file = $baseDir . $path;

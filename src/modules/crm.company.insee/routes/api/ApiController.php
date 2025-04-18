@@ -49,6 +49,7 @@ class ApiController
         try {
             extract($params);
             $sirets=$request->query->all();
+            
             if(!isset($sirets) && !is_array($sirets)){
                 throw new \Exception('An array of Sirets is required');
             }
@@ -74,7 +75,7 @@ class ApiController
                 $start=count($companies);
             }while($start<$company->countByFilter($filter));
             error_log('Processing bodaccAlertsCompany...');
-            $company=$this->companyComponent->getBodaccAlerts($sirens)->getCollection()->currentCompany;
+            $company=$this->companyComponent->getBodaccAlerts($sirens,$request)->getCollection()->currentCompany;
             $alertes=$company["bodaccAlerts"]??[];
             if(!is_array($alertes)||empty($alertes)){
                 error_log('No bodacc alerts found');
