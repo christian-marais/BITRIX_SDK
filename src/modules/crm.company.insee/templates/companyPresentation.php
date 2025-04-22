@@ -64,8 +64,12 @@
     </style>
 </head>
 <body>
-<?php $domain ='http://'.$request->server->get('HTTP_HOST');$baseUrl=$domain.$request->server->get('SCRIPT_NAME');?>
-    
+    <?php 
+        $https=$request?->server->get("SERVER_PORT")=='443'?'https://':'http://';
+        $domain =$https.$request?->server->get('HTTP_HOST');
+        $baseUrl=$domain.$request?->server->get('SCRIPT_NAME');
+        $companyId=$company["requisite"]["ENTITY_ID"]??"";
+    ?>
     <?php include dirname(__FILE__,2) . '/snippets/buttonsBar.php'; ?>
     <div class="container py-4">
         <div class="row mb-4">
@@ -201,9 +205,9 @@
                             <br>
                             <small class="text-muted">Né(e) en <?php echo htmlspecialchars($dirigeant->annee_de_naissance); ?></small>
                         </div>
-                        <?php if(empty($company["ID"])): ?>
+                        <?php if(!empty($companyId)): ?>
                             <div class="info-label">
-                                <button class="btn btn-primary" id="contact<?= $company["ID"] ?>" data-nom="<?php echo htmlspecialchars($dirigeant->nom); ?>" data-qualite="<?php echo htmlspecialchars($dirigeant->qualite); ?>" data-prenom="<?php echo htmlspecialchars($dirigeant->prenom); ?>" onclick="addContact('<?=$companyId?>')">Ajouter le contact</button>
+                                <button class="btn btn-primary" id="contact<?=$companyId ?>" data-nom="<?php echo htmlspecialchars($dirigeant->nom); ?>" data-qualite="<?php echo htmlspecialchars($dirigeant->qualite); ?>" data-prenom="<?php echo htmlspecialchars($dirigeant->prenoms); ?>" onclick="addContact('<?=$companyId?>')">Ajouter le contact</button>
                             </div>
                         <?php endif;?>
                     </div>
@@ -263,11 +267,16 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
-    <script src="../../../base/assets/js/slider.js"></script>
-    <script src="../../../base/assets/js/userDialogBox.js"></script>
     
     <script>
-
+          <?php 
+          
+        ob_start();
+        include dirname(__DIR__,2) . '/base/assets/js/slider.js';
+        // include dirname(__DIR__,2) . '/base/assets/js/userDialogBox.js';
+        echo ob_get_clean();
+        ?>
+        
         function addCompany(siret) {
             data= $.ajax({
                 url: '<?=$baseUrl?>/api/company/'+siret+'/save',
@@ -281,7 +290,9 @@
                         btn.style.backgroundColor='green';
                         btn.style.color='white';
                         setTimeout(function() {
-                            btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                            btn.removeAttribute('onclick');
+                            setBitrix24Slider(querySelector,uri);
+                            // btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
                             btn.innerText='Voir';
                             btn.style.backgroundColor='grey';
                         }, 2500);
@@ -289,16 +300,16 @@
                 }
             });
         }
-
+        // TO DO RAJOUTER UNE VERIFICATION DES CONTACTS AVANT L'AJOUT
         async function addContact(companyId) {
             if(companyId===undefined){
                 return;
             }
             contact=document.getElementById('contact'+companyId);
-            const name=contact.getAttribute('data-name');
+            const name=contact.getAttribute('data-nom');
             const qualite=contact.getAttribute('data-qualite');
             const first_name=contact.getAttribute('data-prenom');
-            const response =fetch('<?=$baseUrl?>/api/company/'+companyId+'/contact/save',{
+            const response =await fetch('<?=$baseUrl?>/api/company/contact/save',{
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -314,12 +325,14 @@
             if(data.status==='success'){
                 const btn = document.getElementById('contact'+companyId);
                 querySelector='#showContact'+companyId;
-                uri='<?=$domain?>/crm/contact/details/'+result+'/';
+                uri='<?=$domain?>/crm/contact/details/'+data.result+'/';
                 btn.innerText='Contact ajouté';
                 btn.style.backgroundColor='green';
                 btn.style.color='white';
                 setTimeout(function() {
-                    btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                    btn.removeAttribute('onclick');
+                    setBitrix24Slider(querySelector,uri);
+                    // btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
                     btn.innerText='Voir';
                     btn.style.backgroundColor='grey';
                 }, 2500);
@@ -327,6 +340,7 @@
         }
     </script>
     <script>
+        const b24Domain='<?=B24_DOMAIN?>';
         let siretField="<?=$company["fields"]["bitrix"]["siret"]??''?>"
         let isAborted = false;
         let activeControllers = {}; // Store active controllers for each unique request
@@ -401,14 +415,16 @@
                                 if (datas.hasOwnProperty(key)) {
                                     if(datas[key]!=null){
                                         url='<?=$domain?>/crm/company/details/'+value+'/';
+                                        localUrl=b24Domain+'/crm/company/details/'+value+'/';
+                                        console.log('domain',b24Domain);
                                         querySelector='#showCompany'+key;
                                         const button=document.getElementById('showCompany'+key);
-                                        button.innerText='Voir la société';
+                                        button.innerText='Société trouvée';
                                         button.style.backgroundColor='#0D6EFD';
                                         button.style.color='white';
-                                        button.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+url+"')");
+                                        button.removeAttribute('onclick');
+                                        setBitrix24Slider(querySelector,url,localUrl);
                                     }
-                                    
                                 }
                             }
                         }else{

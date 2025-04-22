@@ -183,17 +183,17 @@
                             <nav aria-label="Navigation des pages">
                                 <ul class="pagination mb-0">
                                     <li class="page-item <?php echo $activityCollection->pagination['currentPage'] <= 1 ? 'disabled' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $activityCollection->pagination['currentPage'] - 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Précédent">
+                                        <a class="page-link" data-page="<?php echo $activityCollection->pagination['currentPage'] - 1; ?>" href="?page=<?php echo $activityCollection->pagination['currentPage'] - 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Précédent">
                                             <span aria-hidden="true">&laquo;</span>
                                         </a>
                                     </li>
                                     <?php for($i = 1; $i <= max(1, $activityCollection->pagination['totalPages']); $i++): ?>
                                         <li class="page-item <?php echo $activityCollection->pagination['currentPage'] == $i ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $i; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>"><?php echo $i; ?></a>
+                                            <a class="page-link" data-page="<?php echo $i; ?>" href="?page=<?php echo $i; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>"><?php echo $i; ?></a>
                                         </li>
                                     <?php endfor; ?>
                                     <li class="page-item <?php echo $activityCollection->pagination['currentPage'] >= $activityCollection->pagination['totalPages'] ? 'disabled' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $activityCollection->pagination['currentPage'] + 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Suivant">
+                                        <a class="page-link" data-page="<?php echo $activityCollection->pagination['currentPage'] + 1; ?>" href="?page=<?php echo $activityCollection->pagination['currentPage'] + 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Suivant">
                                             <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>
@@ -245,6 +245,7 @@
                                 $responsibles=array_unique($responsibles);
                                 foreach ($responsibles as $responsible): 
                                 ?>
+                                
                                 <option value="<?php echo htmlspecialchars($responsible['ID']); ?>">
                                     Responsable #<?php echo htmlspecialchars($responsible['ID'].' '.$responsible["LAST_NAME"].' '.$responsible['NAME']); ?>
                                 </option>
@@ -273,6 +274,7 @@
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    
 
     <script type="text/javascript" src="../base/assets/js/main.js"></script>
     <script type="text/javascript" src="./assets/js/mailList.js"></script>
@@ -293,17 +295,15 @@
             </div>
         </div>
     </div>
-    
     <?php
     // Vérification des scopes
-    ;
+    
     if (!empty($errorMessages)) {
         
-        echo "document.addEventListener('DOMContentLoaded', function() {";
-        foreach ($errorMessages as $errorMessage) {    
-            echo "showAlert('" . addslashes($errorMessage) . "', 'danger')";
-        }
-        echo "});";
+        echo "<script>document.addEventListener('DOMContentLoaded', function() {";
+            echo "showAlert('" . addslashes(implode(",",$errorMessages)) . "', 'danger');";
+        echo "});</script>";
+        
     }
     ?>
 </body>

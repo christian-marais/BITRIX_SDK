@@ -65,6 +65,8 @@ class WebController
     {  
         // Récupérer les données de l'entreprise
         $company = $params["company"];
+        if(!empty($company['SIRET']))
+            return new RedirectResponse(BASE_URL.'company/'.$company['SIRET']);
 
         ob_start();
         // Charger le template blank

@@ -66,15 +66,16 @@ class CompanyComponent extends CrmCompany{
             if(!$this->hasScope('crm')){
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
-            $company = $this->B24
+            $company = !empty($this->getContextId())?
+            $this->B24
                 ->core
-                ->call('crm.company.get', ['ID' => $this->getContextId()??3008])
+                ->call('crm.company.get', ['ID' => $this->getContextId()])
                 ->getResponseData()
-                ->getResult();
-                
+                ->getResult():
+            [];
             $this->companyCollection->currentCompany = array_merge($this->companyCollection->currentCompany, $company??[]);
             $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields['bitrix']["siret"]]);
-        } catch (Exception $e) {
+       } catch (Exception $e) {
             $this->log($e, 'Erreur lors de la récupération de l\'entreprise');
         }finally{
             return $this;
@@ -615,7 +616,6 @@ class CompanyComponent extends CrmCompany{
             case true||empty($company['SIREN']):
                 include dirname(__FILE__) . '/templates/templateblank.php';
                 break;
-        
             default:
                 include dirname(__FILE__) . '/templates/companyPresentation.php';
                 break;

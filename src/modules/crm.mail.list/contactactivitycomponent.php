@@ -7,7 +7,7 @@ use NS2B\SDK\MODULES\BASE\CrmActivity;
 
 class ContactActivityComponent extends CrmActivity{
 
-    
+    private $start;
 
     public function getActivities() {
      
@@ -39,7 +39,7 @@ class ContactActivityComponent extends CrmActivity{
                 ->getTotal();
 
             // Calculer l'offset pour la pagination
-            $start = ($this->currentPage - 1) * $this->itemsPerPage;
+            $this->start = ($this->currentPage - 1) * $this->itemsPerPage;
             
             // Récupérer les activités pour la page courante avec la limite correcte
             $params = [
@@ -50,7 +50,7 @@ class ContactActivityComponent extends CrmActivity{
                     'RESPONSIBLE_ID', 'DESCRIPTION'
                 ],
                 'order' => ['CREATED' => 'DESC'],
-                'start' => $start,
+                'start' => $this->start,
                 'limit' => intval($this->itemsPerPage)
             ];
 
@@ -96,6 +96,7 @@ class ContactActivityComponent extends CrmActivity{
             }
             $errorMessages=$this->errorMessages;
             $activityCollection= $this->activityCollection;
+            $activities=array_slice($activityCollection->activities,$this->start,($this->start+$this->itemsPerPage));
             include dirname(__FILE__) . '/template.php';
     }
   

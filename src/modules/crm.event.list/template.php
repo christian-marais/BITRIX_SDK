@@ -209,17 +209,17 @@
                             <nav aria-label="Navigation des pages">
                                 <ul class="pagination mb-0">
                                     <li class="page-item <?php echo $activityCollection->pagination['currentPage'] <= 1 ? 'disabled' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $activityCollection->pagination['currentPage'] - 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Précédent">
+                                        <a class="page-link" data-page="<?php echo $activityCollection->pagination['currentPage'] - 1; ?>" href="?page=<?php echo $activityCollection->pagination['currentPage'] - 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Précédent">
                                             <span aria-hidden="true">&laquo;</span>
                                         </a>
                                     </li>
                                     <?php for($i = 1; $i <= max(1, $activityCollection->pagination['totalPages']); $i++): ?>
                                         <li class="page-item <?php echo $activityCollection->pagination['currentPage'] == $i ? 'active' : ''; ?>">
-                                            <a class="page-link" href="?page=<?php echo $i; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>"><?php echo $i; ?></a>
+                                            <a class="page-link" data-page="<?php echo $i; ?>" href="?page=<?php echo $i; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>"><?php echo $i; ?></a>
                                         </li>
                                     <?php endfor; ?>
                                     <li class="page-item <?php echo $activityCollection->pagination['currentPage'] >= $activityCollection->pagination['totalPages'] ? 'disabled' : ''; ?>">
-                                        <a class="page-link" href="?page=<?php echo $activityCollection->pagination['currentPage'] + 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Suivant">
+                                        <a class="page-link" data-page="<?php echo $activityCollection->pagination['currentPage'] + 1; ?>" href="?page=<?php echo $activityCollection->pagination['currentPage'] + 1; ?>&itemsPerPage=<?php echo $currentItemsPerPage; ?>" aria-label="Suivant">
                                             <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>
@@ -348,14 +348,12 @@
     
     <?php
     // Vérification des scopes
-    ;
+       
     if (!empty($errorMessages)) {
+        echo "<script>document.addEventListener('DOMContentLoaded', function() {";
+            echo "showAlert('" . addslashes(implode(",",$errorMessages)) . "', 'danger');";
+        echo "});managePagination();</script>";
         
-        echo "document.addEventListener('DOMContentLoaded', function() {";
-        foreach ($errorMessages as $errorMessage) {    
-            echo "showAlert('" . addslashes($errorMessage) . "', 'danger')";
-        }
-        echo "});";
     }
     ?>
 </body>

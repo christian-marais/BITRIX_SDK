@@ -170,6 +170,38 @@ function selectAllFilteredActivities() {
     });
 }
 
+// // Gestion de la pagination
+// function managePagination() {
+//     document.addEventListener('DOMContentLoaded', function() {
+//         const itemsPerPageSelect = document.getElementById('itemsPerPage');
+//         const paginationLinks = document.querySelectorAll('.pagination .page-link');
+
+//         // Gestion du changement du nombre d'articles par page
+//         itemsPerPageSelect.addEventListener('change', function() {
+//             const newItemsPerPage = this.value;
+//             window.location.href = window.location.pathname + 
+//                 '?itemsPerPage=' + newItemsPerPage + 
+//                 '&page=1'; // Réinitialiser à la première page
+//         });
+
+//         // Gestion de la navigation entre pages
+//         paginationLinks.forEach(link => {
+//             link.addEventListener('click', function(e) {
+//                 e.preventDefault();
+//                 if (!this.closest('.page-item').classList.contains('disabled')) {
+//                     const page = this.getAttribute('data-page');
+//                     const currentItemsPerPage = itemsPerPageSelect.value;
+                    
+//                     window.location.href = window.location.pathname + 
+//                         '?itemsPerPage=' + currentItemsPerPage + 
+//                         '&page=' + page;
+//                 }
+//             });
+//         });
+//     });
+// }
+
+
 
 
 

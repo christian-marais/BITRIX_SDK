@@ -54,6 +54,17 @@ class ApiRouteProvider
             ]
         ));
 
+         // Route api pour ajouter un contact dans bitrix
+         $this->routes->add('api_add_contact', new Route(
+            'api/company/contact/save',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::saveContact',
+                'methods' => ['GET'],
+                'company' => $this->company,
+                'B24' => $this->B24,
+            ]
+        ));
+
         // Route api pour modifier une entreprise dans bitrix
         $this->routes->add('api_bodacc_alerts_company', new Route(
             'api/company/bodacc-alerts',

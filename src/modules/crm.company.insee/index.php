@@ -8,9 +8,11 @@ use Symfony\Component\HttpFoundation\Request;
 $request = Request::createFromGlobals();
 
 define("MODULE_DIR",dirname(__DIR__).'/');
+define("B24_DOMAIN","https://bitrix24demoec.ns2b.fr");
 define ("FULL_BASE_URL",'//'.$request->server->get("HTTP_HOST").$request->server->get("SCRIPT_NAME"));
 const TEMPLATE_DIR=MODULE_DIR.'crm.company.insee/templates/';
-const BASE_URL='/src/modules/crm.company.insee/index.php/';
+define("BASE_URL",$request->server->get("SCRIPT_NAME").'/'??'/src/modules/crm.company.insee/index.php/');
+// const BASE_URL='/src/modules/crm.company.insee/index.php/';
 const DEBUG = false;
 
 $webRouteProvider = new WebRouteProvider();

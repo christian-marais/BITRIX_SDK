@@ -32,7 +32,12 @@ class ApiController
             $result=$B24->core->call('crm.contact.add',[
                 "fields"=>$requestBody
             ])->getResponseData()->getResult()["result"];
-            return new JsonResponse($result,200);
+            return new JsonResponse( 
+                [
+                    'status' => 'success',
+                    'message' => 'Contact saved successfully',
+                    'result'=>$result
+                ], 200);
         } catch (\Exception $e) {
             error_log('Error response saveContact...');
             return new JsonResponse([

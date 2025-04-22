@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <title>Annuaire d'Enterprises</title>
+    <title>Annuaire d'Entreprises</title>
     <style>
         body {
             background-color: #f8f9fa;
@@ -122,9 +122,14 @@
             </div>
         </div>
     </div>
-    <?php $domain ='http://'.$request?->server->get('HTTP_HOST');$baseUrl=$domain.$request?->server->get('SCRIPT_NAME');?>
+    <?php 
+        $https=$request?->server->get("SERVER_PORT")=='443'?'https://':'http://';
+        $domain =$https.$request?->server->get('HTTP_HOST');
+        $baseUrl=$domain.$request?->server->get('SCRIPT_NAME');
+    ?>
     <div class="container results-container">
         <div id="results" class="row">
+        </div>
         </div>
     </div>
     <?php foreach($contents??[] as $content) : echo $content; endforeach; ?>
@@ -132,9 +137,12 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
-    <script src="../../../base/assets/js/slider.js"></script>
     <script>
-        
+        <?php 
+        ob_start();
+        include dirname(__DIR__,2) . '/base/assets/js/slider.js';
+        echo ob_get_clean();
+        ?>
         let siretField="<?=$company["fields"]["bitrix"]["siret"]??''?>"
         let isAborted = false;
         let activeControllers = {}; // Store active controllers for each unique request
@@ -199,12 +207,12 @@
                                         url='<?=$domain?>/crm/company/details/'+value+'/';
                                         querySelector='#showCompany'+key;
                                         const button=document.getElementById('showCompany'+key);
-                                        button.innerText='Voir';
+                                        button.innerText='Entreprise trouvée';
                                         button.style.backgroundColor='#0D6EFD';
                                         button.style.color='white';
-                                        button.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+url+"')");
+                                        button.removeAttribute('onclick');
+                                        setBitrix24Slider(querySelector,url);
                                     }
-                                    
                                 }
                             }
                         }else{

@@ -84,11 +84,19 @@ class WebhookManager extends ServiceBuilderFactory
         return $this;
     }
 
+    public function __destruct(){
+        $_SESSION["NS"]=false;
+    }
+
     public function setB24(){
         _error_log("Starting setB24");
-        if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
-        include_once($file);
-        
+        $server=$this->webhookCollection->request->server; 
+        $isApiRoute= str_contains($server->get("PATH_INFO"),"api") || str_contains($server->get("REQUEST_URI"),"api"); 
+        if(is_bool($_SESSION["NS"]) && $_SESSION["NS"]!==true && !$isApiRoute){
+            if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
+            $_SESSION["NS"]=true;
+            include_once($file);
+        }
         switch(true){
             case (!empty($_REQUEST['APP_SID']) && !empty($_REQUEST['APP_SECRET'])):
                 _error_log("Processing setB24... APP_SID: ".$_REQUEST['APP_SID']??'');
@@ -110,7 +118,7 @@ class WebhookManager extends ServiceBuilderFactory
                 }
                 break;
         }
-        
+        _error_log("Ending setB24");
         return $this;
     }
 

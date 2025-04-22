@@ -92,7 +92,9 @@
                 showMessage(data.message || 'Webhook ' + action + ' avec succès', '#00C851');
                 // Changer le bouton de fermeture
                 const closeBtn = document.querySelector('button[onclick="closePopup()"]');
-                setTimeout(() => { window.location.href = '/src/modules/crm.company.insee/index.php/company/'; }, 5000);
+                baseurl='<?=BASE_URL?>';
+                setTimeout(() => { window.location.href = baseurl+'company/'; }, 5000);
+               // setTimeout(() => { window.location.href = '/src/modules/crm.company.insee/index.php/company/'; }, 5000);
             } else {
                 input.style.border = '1px solid #ff4444';
                 showMessage(data.message || 'Webhook invalide', '#ff4444');
