@@ -29,9 +29,9 @@
                         <i class="bi bi-file-pdf" ></i>SOCIETE.COM
                     </a>
                 <?php endif;?>
-                <!--div class="btn-group" role="group" aria-label="Actions">
+                <div class="btn-group" role="group" aria-label="Actions">
                     <a href="/src/modules/crm.company.insee/index.php/webhook" type="button" class="btn btn-primary" id="saveWebhook">Configurer le Webhook</a>
-                </div-->
+                </div>
             </div>
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>

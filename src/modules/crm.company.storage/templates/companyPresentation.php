@@ -186,8 +186,7 @@
                 <h2 class="h5 mb-0"><i class="bi bi-people me-2"></i>Dirigeants</h2>
             </div>
             <div class="info-content">
-                <?php $i=0;foreach ($company["annuaire"]->dirigeants as $dirigeant): ?>
-                    <?php $i++; ?>
+                <?php foreach ($company["annuaire"]->dirigeants as $dirigeant): ?>
                     <?php if($dirigeant->type_dirigeant=='personne morale'):?>
                     <div class="info-row">
                     <div class="info-label"><?php echo htmlspecialchars($dirigeant->qualite); ?></div>
@@ -208,7 +207,7 @@
                         </div>
                         <?php if(!empty($companyId)): ?>
                             <div class="info-label">
-                                <button class="btn btn-primary contact<?=$companyId ?>" id="contact<?=$i?>" data-nom="<?php echo htmlspecialchars($dirigeant->nom); ?>" data-qualite="<?php echo htmlspecialchars($dirigeant->qualite); ?>" data-prenom="<?php echo htmlspecialchars($dirigeant->prenoms); ?>" onclick="addContact('<?=$companyId?>',<?=$i?>)">Ajouter le contact</button>
+                                <button class="btn btn-primary" id="contact<?=$companyId ?>" data-nom="<?php echo htmlspecialchars($dirigeant->nom); ?>" data-qualite="<?php echo htmlspecialchars($dirigeant->qualite); ?>" data-prenom="<?php echo htmlspecialchars($dirigeant->prenoms); ?>" onclick="addContact('<?=$companyId?>')">Ajouter le contact</button>
                             </div>
                         <?php endif;?>
                     </div>
@@ -278,7 +277,7 @@
         echo ob_get_clean();
         ?>
         
-        function addCompanyToBitrix(siret) {
+        function addCompany(siret) {
             data= $.ajax({
                 url: '<?=$baseUrl?>/api/company/'+siret+'/save',
                 method: 'GET',
@@ -286,77 +285,67 @@
                     if(data.status==='success'){
                         uri='<?=$domain?>/crm/company/details/'+data.result+'/';
                         querySelector='#showCompany'+siret;
-                        const localUri='<?=B24_DOMAIN?>/crm/company/details/'+data.result+'/';
                         const btn = document.getElementById('showCompany'+siret);
                         btn.innerText='Entreprise ajoutée';
                         btn.style.backgroundColor='green';
                         btn.style.color='white';
-                        btn.removeAttribute('onclick');
-                        <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
-                        setBitrix24Slider(querySelector,uri,localUri);
-                        <?php else: ?>
-                        btn.addEventListener('click', function() {
-                            window.location.href = localUri;
-                        })
-                        <?php endif; ?>
+                        setTimeout(function() {
+                            btn.removeAttribute('onclick');
+                            setBitrix24Slider(querySelector,uri);
+                            // btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                            btn.innerText='Voir';
+                            btn.style.backgroundColor='grey';
+                        }, 2500);
                     }
                 }
             });
         }
 
-        function getContacts(companyId) {
+        async function getContacts(companyId) {
             if(companyId===undefined){
                 return;
             }
-            const querySelectors='.contact'+companyId;
-            let btns=document.querySelectorAll(querySelectors);
-            btns.forEach(async function(btn){
-                btn.innerText='Recherche...';
-                let querySelector='#'+btn.getAttribute('id');
-                const name=btn.getAttribute('data-nom');
-                const qualite=btn.getAttribute('data-qualite');
-                const first_name=btn.getAttribute('data-prenom');
-                const response =await fetch('<?=$baseUrl?>/api/company/contacts',{
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        LAST_NAME: name,
-                        NAME: first_name,
-                        COMPANY_ID: companyId
-                    })
-                });
-                data= await response.json();
-                if(data.status==='success'){
-                    uri='<?=$domain?>/crm/contact/details/'+data.result[0].ID+'/';
-                    let localUri='<?=B24_DOMAIN?>/crm/contact/details/'+data.result[0].ID+'/';
-                    btn.setAttribute('data-contact-id',data.result[0].ID);
-                    btn.innerText='Voir';
-                    btn.style.color='white';
+            contact=document.getElementById('contact'+companyId);
+            const name=contact.getAttribute('data-nom');
+            const qualite=contact.getAttribute('data-qualite');
+            const first_name=contact.getAttribute('data-prenom');
+            const response =await fetch('<?=$baseUrl?>/api/company/contacts',{
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "LAST_NAME": name,
+                    "NAME": first_name,
+                    "COMPANY_ID": companyId
+                })
+            });
+            console.log(response);
+            data= await response.json();
+            console.dir("contact",data);
+            if(data.status==='success'){
+                const btn = document.getElementById('contact'+companyId);
+                querySelector='#showContact'+companyId;
+                console.dir(data.result);
+                uri='<?=$domain?>/crm/contact/details/'+data.result+'/';
+                btn.innerText='Voir';
+                btn.style.backgroundColor='green';
+                btn.style.color='white';
+                setTimeout(function() {
                     btn.removeAttribute('onclick');
-                    <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
-                    setBitrix24Slider(querySelector,uri,localUri);
-                    <?php else: ?>
-                    btn.addEventListener('click', function() {
-                        window.location.href = localUri;
-                    })
-                    <?php endif; ?>
-                }else{
-                    btn.innerText='Ajouter le contact';
-                }
-            })
+                    setBitrix24Slider(querySelector,uri);
+                }, 2500);
+            }
         }
-
-        async function addContact(companyId,id) {
+        // TO DO RAJOUTER UNE VERIFICATION DES CONTACTS AVANT L'AJOUT
+        async function addContact(companyId) {
             if(companyId===undefined){
                 return;
             }
-            const querySelector='#contact'+id;
-            let btn=document.querySelector(querySelector);
-            const name=btn.getAttribute('data-nom');
-            const qualite=btn.getAttribute('data-qualite');
-            const first_name=btn.getAttribute('data-prenom');
+            contact=document.getElementById('contact'+companyId);
+            const name=contact.getAttribute('data-nom');
+            const qualite=contact.getAttribute('data-qualite');
+            const first_name=contact.getAttribute('data-prenom');
             const response =await fetch('<?=$baseUrl?>/api/company/contact/save',{
                 method: 'POST',
                 headers: {
@@ -371,20 +360,19 @@
             });
             data= await response.json();
             if(data.status==='success'){
-                
-                uri='<?=$domain?>/crm/contact/details/'+data.result[0]+'/';
-                const localUri='<?=B24_DOMAIN?>/crm/contact/details/'+data.result[0]+'/';
+                const btn = document.getElementById('contact'+companyId);
+                querySelector='#showContact'+companyId;
+                uri='<?=$domain?>/crm/contact/details/'+data.result+'/';
                 btn.innerText='Contact ajouté';
                 btn.style.backgroundColor='green';
                 btn.style.color='white';
-                btn.removeAttribute('onclick');
-                <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
-                setBitrix24Slider(querySelector,uri,localUri);
-                <?php else: ?>
-                btn.addEventListener('click', function() {
-                    window.location.href = localUri;
-                })
-                <?php endif; ?>
+                setTimeout(function() {
+                    btn.removeAttribute('onclick');
+                    setBitrix24Slider(querySelector,uri);
+                    // btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                    btn.innerText='Voir';
+                    btn.style.backgroundColor='grey';
+                }, 2500);
             }
         }
     </script>
@@ -404,6 +392,8 @@
             getContacts(<?=$companyId?>);
             showCompany(sirets);
         });
+
+        
 
         function showCompany(sirets) {
             const requestKey = sirets.join(',');
@@ -471,14 +461,7 @@
                                         button.style.backgroundColor='#0D6EFD';
                                         button.style.color='white';
                                         button.removeAttribute('onclick');
-                                        <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
                                         setBitrix24Slider(querySelector,url,localUrl);
-                                        <?php else: ?>
-                                        button.addEventListener('click', function() {
-                                            window.location.href = localUrl;
-                                        })
-                                        <?php endif; ?>
-                                        button.innerText='Voir';
                                     }
                                 }
                             }

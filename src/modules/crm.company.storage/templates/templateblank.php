@@ -107,7 +107,7 @@
 <body> 
     <div class="search-container mb-4">
         <div class="container">
-            <h1 class="search-title text-center">Annuaire d'Entreprises</h1>
+            <h1 class="search-title text-center">Annuaire d'Enterprises</h1>
             <div class="row justify-content-center">
                 <div class="col-md-8">
                     <div class="input-group">
@@ -204,22 +204,14 @@
                             for (let [key,value] of Object.entries(datas)) {
                                 if (datas.hasOwnProperty(key)) {
                                     if(datas[key]!=null){
-                                        const url='<?=$domain?>/crm/company/details/'+value+'/';
-                                        const localUri='<?=B24_DOMAIN?>/crm/company/details/'+value+'/';
-                                        const querySelector='#showCompany'+key;
+                                        url='<?=$domain?>/crm/company/details/'+value+'/';
+                                        querySelector='#showCompany'+key;
                                         const button=document.getElementById('showCompany'+key);
                                         button.innerText='Entreprise trouvée';
                                         button.style.backgroundColor='#0D6EFD';
                                         button.style.color='white';
                                         button.removeAttribute('onclick');
-                                        <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
-                                        setBitrix24Slider(querySelector,url,localUri);
-                                        <?php else: ?>
-                                        button.addEventListener('click', function() {
-                                            window.location.href = localUri;
-                                        })
-                                        <?php endif; ?>
-                                        button.innerText='Voir';
+                                        setBitrix24Slider(querySelector,url);
                                     }
                                 }
                             }
@@ -259,21 +251,15 @@
                 success: function(data) {
                     if(data.status==='success'){
                         const btn = document.getElementById('showCompany'+siret);
-                        const querySelector='#showCompany'+siret;
-                        const localUri='<?=B24_DOMAIN?>/crm/company/details/'+data.result+'/';
-                        const uri='<?=$domain?>/crm/company/details/'+data.result+'/';
+                        uri='<?=$domain?>/crm/company/details/'+data.result+'/';
                         btn.innerText='Entreprise ajoutée';
                         btn.style.backgroundColor='green';
                         btn.style.color='white';
-                        btn.removeAttribute('onclick');
-                        <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
-                        setBitrix24Slider(querySelector,uri,localUri);
-                        <?php else: ?>
-                        btn.addEventListener('click', function() {
-                            window.location.href = localUri;
-                        })
-                        <?php endif; ?>
-                        btn.innerText='Voir';
+                        setTimeout(function() {
+                            btn.setAttribute('onclick', "setBitrix24Slider('"+querySelector+"','"+uri+"')");
+                            btn.innerText='Voir';
+                            btn.style.backgroundColor='grey';
+                        }, 2500);
                     }
                 }
             });
@@ -378,7 +364,9 @@
                         });
                     }
                 });
+              
             });
+           
     </script>
 </body>
 </html>

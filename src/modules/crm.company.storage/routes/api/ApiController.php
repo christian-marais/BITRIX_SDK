@@ -31,7 +31,7 @@ class ApiController
             error_log('Processing saveContact...');
             $result=$B24->core->call('crm.contact.add',[
                 "fields"=>$requestBody
-            ])->getResponseData()->getResult();
+            ])->getResponseData()->getResult()["result"];
             return new JsonResponse( 
                 [
                     'status' => 'success',
@@ -57,7 +57,7 @@ class ApiController
             error_log('Processing getContacts...');
             $result=$B24->core->call('crm.contact.list',[
                 "filter"=>$requestBody
-            ])->getResponseData()->getResult();
+            ])->getResponseData()->getResult()["result"];
             if(empty($result[0])){
                 throw new \Exception('Contacts not found');
             }
@@ -65,7 +65,7 @@ class ApiController
                 [
                     'status' => 'success',
                     'message' => 'Contacts retrieved successfully',
-                    'result'=>$result
+                    'result'=>$result[0]
                 ], 200);
         } catch (\Exception $e) {
             error_log('Error response getContacts...');
