@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <?php if (defined('FULL_BASE_URL')): ?>
+    <link rel="stylesheet" href="<?=dirname(FULL_BASE_URL) ?>/assets/css/nextcloudForm.css">
+    <?php endif; ?>
     <title>Établissement <?php echo htmlspecialchars($company['legalName']); ?></title>
     <style>
         body {
@@ -268,7 +271,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/@bitrix24/b24jssdk@latest/dist/umd/index.min.js"></script>
-    
+    <script src="<?= dirname(FULL_BASE_URL) ?>/assets/js/nextcloudForm.js"></script>
     <script>
           <?php 
           

@@ -50,6 +50,9 @@ class WebhookManager extends ServiceBuilderFactory
 
 
     public function firewall(string  $redirecToRoute=null): Response|self{
+        if(defined("DISABLE_FIREWALL") && DISABLE_FIREWALL==="DISABLE_FIREWALL"){
+            return $this;
+        }
         _error_log("starting firewall");
         $this->addSafeRoutes([$redirecToRoute]);
         $server=$this->webhookCollection->request->server;  
@@ -85,6 +88,7 @@ class WebhookManager extends ServiceBuilderFactory
     }
 
     public function __destruct(){
+        if(!defined('$_SESSION')) return;
         $_SESSION["NS"]=false;
     }
 
@@ -92,7 +96,7 @@ class WebhookManager extends ServiceBuilderFactory
         _error_log("Starting setB24");
         $server=$this->webhookCollection->request->server; 
         $isApiRoute= str_contains($server->get("PATH_INFO"),"api") || str_contains($server->get("REQUEST_URI"),"api"); 
-        if(is_bool($_SESSION["NS"]) && $_SESSION["NS"]!==true && !$isApiRoute){
+        if(defined('$_SESSION') && is_bool($_SESSION["NS"]) && $_SESSION["NS"]!==true && !$isApiRoute && defined("IS_B24_IMPLEMENTED") && IS_B24_IMPLEMENTED){
             if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
             $_SESSION["NS"]=true;
             include_once($file);

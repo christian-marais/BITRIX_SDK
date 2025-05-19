@@ -1,5 +1,6 @@
 
 <div class="card">
+             
     <div class="card-body">
         <?php if(!empty($company['SIREN']) && $display=true): ?>
             <div class="card-title d-flex justify-content-end " >
@@ -29,14 +30,80 @@
                         <i class="bi bi-file-pdf" ></i>SOCIETE.COM
                     </a>
                 <?php endif;?>
+                <?php 
+                $fields=$company['fields']['bitrix']??[];
+      
+                if(!empty($fields) && !empty($company[$fields["NextcloudAccount"]]) && !empty($company[$fields["NextcloudPassword"]])): ?>
+                <button id="nextcloud" class="btn btn-primary mx-2" >
+                    <i class="bi bi-file-text" style="margin-right: 5px;"></i>Create Nextcloud Space
+                </button>
+                <?php endif;?>
                 <!--div class="btn-group" role="group" aria-label="Actions">
                     <a href="/src/modules/crm.company.insee/index.php/webhook" type="button" class="btn btn-primary" id="saveWebhook">Configurer le Webhook</a>
                 </div-->
             </div>
+            
             <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             <script>
             $(document).ready(function() {
+
                 // Fonction pour sauvegarder le webhook
+                <?php if(!empty($fields) && !empty($company[$fields['NextcloudAccount']]) && !empty($company[$fields['NextcloudPassword']])): ?>
+                    createUserSpace();
+                    fetch("<?=FULL_BASE_URL?>/api/nextcloud/folder/find", {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        userId: "<?=$company[$fields['NextcloudAccount']]?>",
+                        company: "<?=$companyLabel=$company['legalName'].$company['SIRET']?>",
+                        folderName: "/public/<?=$companyLabel.'/'.$company[$fields['NextcloudAccount']]?>"
+                        })
+                    }).then(function(response) {
+                        return response.json();
+                    }).then(function(data) {
+                        if(data.status=="success"){
+                            console.log("fodlerfound",data);
+                            $('#nextcloud').text('Ouvrir le drive Nextcloud');
+                            $('#nextcloud').unbind('click');
+                            $('#nextcloud').click(function() {
+                                window.open(data.data.folderUrl, '_blank');
+                            });
+                        }else{
+                            console.log("Folder not found", data)
+                        }
+                        
+                    }).catch(function(error) {
+                        console.log("Error nextcloud in getting folder", error)
+                    });
+                <?php endif; ?>
+                function createUserSpace(){
+                    $('#nextcloud').click(function(){
+                        const data={
+                            userId: "<?=$company[$fields['NextcloudAccount']]?>",
+                            password: "<?=$company[$fields['NextcloudPassword']]?>",
+                            company: "<?=$companyLabel=$company['legalName'].$company['SIRET']?>"
+                        }
+                        $.ajax({
+                            url: "<?=FULL_BASE_URL?>/api/nextcloud/space/create",
+                            method: 'POST',
+                            data: data,
+                            success: function(response) {
+                               console.log("success data",response)
+                                alert('Profil Nextcloud créé avec succès !');
+                                $('#nextcloud').text('Ouvrir le drive');
+                                $('#nextcloud').unbind('click');
+                                $('#nextcloud').click(function() {
+                                    window.open(response.data, '_blank');
+                                });
+                            },
+                            error: function(xhr, status, error) {
+                                console.info("User space Info",data)
+                                console.error("nextcloud response", response);
+                                console.log("nextcloud error", xhr);
+                                alert('Erreur lors de la creation du profil Nextcloud');
+                            }
+                        });
+                    });
+                }
                 $('#saveWebhook').click(function() {
                     const webhook = prompt("Veuillez entrer le webhook Bitrix :");
                     if (webhook) {

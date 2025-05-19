@@ -65,6 +65,21 @@ class ApiRouteProvider
             ]
         ));
 
+          // Route api pour ajouter un contact dans bitrix
+          $this->routes->add('api_upload_file', new Route(
+            'api/company/{id}/storage/upload/{code}/',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::uploadCompanyFile',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24,
+            ],
+            [
+                'id' => '\d+',
+                'code' => '[a-z0-9]+'
+            ]
+        ));
+
          // Route api pour ajouter un contact dans bitrix
          $this->routes->add('api_get_contacts', new Route(
             'api/company/contacts',
@@ -84,9 +99,6 @@ class ApiRouteProvider
                 'methods' => ['GET'],
                 'company' => $this->company,
                 'B24' => $this->B24,
-            ],
-            [
-                'siret' => '\d{14}'
             ]
         ));
         
@@ -133,7 +145,65 @@ class ApiRouteProvider
             ]
         ));
 
-        
+        $this->routes->add('api_add_user_to_nextcloud', new Route(
+            'api/nextcloud/user/add',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::addUserToNextcloud',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+
+        $this->routes->add('api_add_folder_to_nextcloud', new Route(
+            'api/nextcloud/folder/add',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::addFolderToNextcloud',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+
+        $this->routes->add('api_get_user_from_nextcloud', new Route(
+            'api/nextcloud/user',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::getUserFromNextcloud',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+        $this->routes->add('api_share_folder_to_nextcloud', new Route(
+            'api/nextcloud/folder/share',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::shareFolderToNextcloud',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+
+        $this->routes->add('api_find_folder_to_nextcloud', new Route(
+            'api/nextcloud/folder/find',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::findNextcloudFolder',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+
+        $this->routes->add('api_create_user_share_space', new Route(
+            'api/nextcloud/space/create',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::createUserShareSpace',
+                'methods' => ['POST'],
+                'company' => $this->company,
+                'B24' => $this->B24
+            ]
+        ));
+
         //Route api pour récupérer une entreprise de l'annuaire à partir du siret
          
         $this->routes->add('api_get_annuaire', new Route(

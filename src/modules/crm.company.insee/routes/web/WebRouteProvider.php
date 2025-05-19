@@ -54,6 +54,20 @@ class WebRouteProvider
                 'siret' => '\d+' // Validation du format SIRET (14 chiffres)
             ]
         ));
+
+        // Route api pour ajouter un contact dans bitrix
+        $this->routes->add('company_upload_file', new Route(
+            $this->baseRoute.'{id}/storage/upload/{code}/',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\WEB\WebController::uploadCompanyFile',
+                'methods' => ['GET'],
+                'company' => $this->company,
+            ],
+            [
+                'id' => '\d+',
+                'code' => '[a-z0-9]+'
+            ]
+        ));
         
         // Route pour afficher la page de détails
         $this->routes->add('company_view', new Route(

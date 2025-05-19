@@ -9,11 +9,11 @@ $request = Request::createFromGlobals();
 
 define("MODULE_DIR",dirname(__DIR__).'/');
 define("B24_DOMAIN","https://bitrix24demoec.ns2b.fr");
-define ("FULL_BASE_URL",'//'.$request->server->get("HTTP_HOST").$request->server->get("SCRIPT_NAME"));
+define ("FULL_BASE_URL",'http://'.$request->server->get("HTTP_HOST").$request->server->get("SCRIPT_NAME"));
 define("BASE_URL",$request->server->get("SCRIPT_NAME").'/'??'/src/modules/crm.company.insee/index.php/');
 const TEMPLATE_DIR=MODULE_DIR.'crm.company.insee/templates/';
 const DEBUG = false;
-const IS_B24_IMPLEMENTED=true;
+const IS_B24_IMPLEMENTED=false;
 // const BASE_URL='/src/modules/crm.company.insee/index.php/';
 
 

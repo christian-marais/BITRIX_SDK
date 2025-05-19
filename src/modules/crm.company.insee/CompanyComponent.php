@@ -4,7 +4,10 @@ namespace NS2B\SDK\MODULES\CRM\COMPANY\INSEE;
 use \Exception;
 use \DateTime;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpFoundation\Request;
 use NS2B\SDK\MODULES\BASE\CrmCompany;
+use stdClass;
+
 /**
  * Class CompanyComponent
  *
@@ -41,6 +44,7 @@ class CompanyComponent extends CrmCompany{
             'SIREN'=>null,
             'legalName'=>null,
             'requisite'=>null,
+            'contacts'=>null,
             'annuaire'=>null,
             'bodacc'=>null,
             'boddacAlerts'=>null,
@@ -66,14 +70,22 @@ class CompanyComponent extends CrmCompany{
             if(!$this->hasScope('crm')){
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
-            $company = !empty($this->getContextId())?
+            $company = !empty($id=$this->getContextId())?
             $this->B24
                 ->core
-                ->call('crm.company.get', ['ID' => $this->getContextId()])
+                ->call('crm.company.get', [
+                    'ID' => $id,
+                    'SELECT' => [
+                        '*',
+                        ...$this->fields['bitrix']
+                    ]
+                ])
                 ->getResponseData()
                 ->getResult():
-            [];
-            $this->companyCollection->currentCompany = array_merge($this->companyCollection->currentCompany, $company??[]);
+            null;
+            $this->companyCollection->currentCompany = array_merge($this->companyCollection->currentCompany, $company??[],['fields'=>$this->fields]);
+            
+            $this->getCompanyContacts();
             $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields['bitrix']["siret"]]);
        } catch (Exception $e) {
             $this->log($e, 'Erreur lors de la récupération de l\'entreprise');
@@ -89,21 +101,21 @@ class CompanyComponent extends CrmCompany{
      * @return $this
      */
     public function getCompanyWithSiretFromBitrix(string $siret=null){
-
         try {
-            $siret=isset($_GET["siret"])?$siret??htmlspecialchars($_GET["siret"]):$siret;
-            
-            if(!$this->hasScope('crm'))
-                throw new Exception('Le module ou scope CRM n\'est pas activé');
+            $request= Request::createFromGlobals();
+            $siret=$siret??explode('/',$request->getPathInfo())[2]??$request->query->get('siret');
             if(!is_numeric($siret))
                 throw new Exception('Le numéro SIRET est invalide');
+            if(($len=strlen($siret))!=14)
+                throw new Exception('Le numéro SIRET est trop court ou trop long');
+            if(!$this->hasScope('crm'))
+                throw new Exception('Le module ou scope CRM n\'est pas activé');
             
-
             $company = $this->B24
                 ->core
                 ->call('crm.company.list', [
                     'SELECT' => [
-                        '*'
+                        '*',...$this->fields['bitrix']
                     ],
                     'FILTER' => [
                         $this->fields['bitrix']["siret"]=> $siret
@@ -112,10 +124,13 @@ class CompanyComponent extends CrmCompany{
                 ->getResponseData()
                 ->getResult()[0]??null;
             $this->companyCollection->currentCompany = $company;
+            $this->companyCollection->currentCompany['fields']=$this->fields;
             $this->setCustomSiret($siret);
+           
         }catch (Exception $e) {
             $this->log($e, 'Erreur lors de la récupération de l\'entreprise de bitrix  à partir du siret');
         }finally{
+            $this->getCompanyContacts();
             return $this;
         }
     }
@@ -248,17 +263,19 @@ class CompanyComponent extends CrmCompany{
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
 
-            $requisite = $this->B24
+            $requisite = !empty($id=$this->getContextId()??$this->companyCollection->currentCompany['ID'])?
+            $this->B24
                 ->core
                 ->call('crm.requisite.list', [
                 'filter' => [
-                    'ENTITY_ID' => 3008,
+                    'ENTITY_ID' => $id,
                     'ENTITY_TYPE_ID' => $this->entityTypeId
                 ],
                 'select' => [$this->fields['bitrix']["pappersUrl_mention"],'*']
                 ])
                 ->getResponseData()
-                ->getResult()[0]??null;
+                ->getResult()[0]??null
+                :null;
                 $this->companyCollection->currentCompany['requisite'] = !empty($requisite)?$requisite:null;
 
         } catch (Exception $e) {
@@ -267,6 +284,9 @@ class CompanyComponent extends CrmCompany{
             return $this;
         }
     }
+
+
+    
 
 
     /**
@@ -600,6 +620,56 @@ class CompanyComponent extends CrmCompany{
     }
     public function getCompany(){
         return $this->companyCollection->currentCompany;
+    }
+
+    public function getCompanyById($company):array{
+        
+        $company=$this->B24
+        ->core
+        ->call('crm.company.get', 
+        ['ID'=>$company["id"],
+        'select'=>['*']
+        ])
+        ->getResponseData()
+        ->getResult();
+        return $this->companyCollection->currentCompany=$company;
+        
+    }
+
+    public function getCompanyContacts(){
+        _error_log('Processing getCompanyContacts');
+        if( !array_key_exists('ID',$this->companyCollection->currentCompany) ||
+            empty($id=$this->companyCollection->currentCompany['ID'])){
+            return $this;
+        }
+        try{
+            $contacts=$this->B24
+            ->core
+            ->call(
+                'crm.company.contact.items.get',
+                ['ID'=>$id]
+            )
+            ->getResponseData()
+            ->getResult();
+            foreach($contacts as $contact){
+                $result[]=$this->B24
+                ->core
+                ->call('crm.contact.get', 
+                ['ID'=>$contact["CONTACT_ID"],
+                'select'=>['*']
+                ])
+                ->getResponseData()
+                ->getResult();
+            }
+            $this->companyCollection->currentCompany['contacts']=$result;
+        
+        }catch(Exception $e){
+            _error_log('Error getCompanyContacts: '.$e->getMessage());
+            $this->log($e, $e->getMessage());
+        }finally{
+            _error_log('Ending getCompanyContacts');
+            return $this;
+        }
     }
 
 

@@ -9,6 +9,9 @@ use NS2B\SDK\MODULES\BASE\WebhookManager;
 use NS2B\SDK\DATABASE\DatabaseSQLite;
 use NS2B\SDK\MODULES\CRM\COMPANY\INSEE\CompanyComponent;
 use Symfony\Component\HttpClient\HttpClient;
+use NS2B\SDK\MODULES\CRM\COMPANY\INSEE\NextcloudService;
+
+use function PHPUnit\Framework\assertTrue;
 
 class ApiController
 {   
@@ -48,6 +51,7 @@ class ApiController
         }
     }
 
+    
     public function getContacts(Request $request,...$params): Response
     {
         error_log('Starting getContacts...');
@@ -408,6 +412,199 @@ class ApiController
                 'status' => 'error',
                 'message' => $webhook.' '.$e->getMessage()
             ], 404);
+        }
+    }
+
+    public function findNextcloudFolder(Request $request,...$params): Response
+    {   
+        try {
+            $nc = new NextcloudService();
+            $body=json_decode($request->getContent(),true);
+            if(
+                empty($username=$request->request->get('userId')??$body["userId"]) || 
+                empty($folder=$request->request->get('folderName')??$body["folderName"])
+            ) 
+            {
+                throw new \Exception("Missing userId or folderName");
+            }
+            $data=$nc->getFolder($nc->getMainAccount(),$folder);
+            $data['folderUrl']=$nc->getBaseUrl().'/apps/files/files?dir='.$folder;
+            $data['folderId']=$folder;
+            if($data['status'] != 'success') {
+                throw new \Exception("Erreur le dossier {$folder} de l'utilisateur {$username} est introuvable dans Nextcloud");
+            }
+
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => "Dossier {$folder} trouvé dans Nextcloud",
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'data' => $data,
+                'body'=>$body
+            ], 400);
+        }
+    }
+    
+    public function addUserToNextcloud(Request $request,...$params): Response
+    {   
+        try {
+            $nc = new NextcloudService();
+            if(
+                empty($username=$request->request->get('userId')) || 
+                empty($password=$request->request->get('password'))
+            ) {
+                throw new \Exception("Missing userId or password");
+            }
+            $data=$nc->createUser($username,$password);
+            
+            if($data['status'] != 'success') {
+                throw new \Exception("Erreur lors de la creation de l'utilisateur dans Nextcloud");
+            }
+
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => "Utilisateur {$request->get('userId')} creé dans Nextcloud",
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'data' => $data
+            ], 400);
+        }
+    }
+
+    public function addFolderToNextcloud(Request $request,...$params): Response
+    {   
+        try {
+            $nc = new NextcloudService();
+            if(
+                empty($data['username']=$request->request->get('userId'))|| 
+                empty($data['folderName']=$request->request->get('folderName'))
+            ) {
+                throw new \Exception("Missing userId or folderName");
+            }
+            $data=$nc->createFolder(
+                $data['username'],
+                $data['folderName']
+            );
+            if($data['status'] != 'success') {
+                throw new \Exception("Erreur lors de la creation du dossier dans Nextcloud");
+            }
+
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => "Dossier {$data['folderName']} creé dans Nextcloud",
+                'data' => $data,
+                'request' => $request->request->all()
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'data' => $data,
+                'request' => $request->request->all()
+            ], 400);
+        }
+    }
+    public function getUserFromNextcloud(Request $request,...$params): Response
+    {   
+        try {
+            $nc = new NextcloudService();
+            
+            if(empty($username=$request->request->get('userId'))) {
+                throw new \Exception("Missing userId");
+            }
+            $data=$nc->getUser($username);
+            if($data['status'] != 'success') {
+                throw new \Exception("Erreur lors de la creation de l'utilisateur dans Nextcloud");
+            }
+
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => "Utilisateur {$username} creé dans Nextcloud",
+                'data' => $data
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'data' => $data,
+                'request' => $request->request->all()
+            ], 400);
+        }
+    }
+
+    public function shareFolderToNextcloud(Request $request,...$params): Response
+    {   
+        try {
+            $nc = new NextcloudService();
+            if(
+                empty($data['folderName']=$request->request->get('folderName')) || 
+                empty($data['targetUser']=$request->request->get('targetUser'))
+            ) {
+                throw new \Exception("Missing folderName or targetUser");
+            }
+            $data=$nc->shareFolder(
+                folderPath: $data['folderName'],
+                targetUser: $data['targetUser']    
+            );
+            if($data['status'] != 'success') {
+                throw new \Exception("Erreur lors du partage du dossier {$data['folderName']} avec l'utilisateur {$data['targetUser']} dans Nextcloud");
+            }
+
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => "Utilisateur {$data['targetUser']} a bien accès au dossier {$data['folderName']}",
+                'data' => $data,
+                'request' => $request->request->all()
+            ], 200);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'data' => $data,
+                'request' => $request->request->all()
+            ], 400);
+        }
+    }
+
+    public function createUserShareSpace(Request $request,...$params): Response
+    {   try{
+            $nc = new NextcloudService();
+            if(
+                empty($data['password']=$request->request->get('password')) || 
+                empty($data['userId']=$request->request->get('userId')) || 
+                empty($data['company']=$request->request->get('company'))
+            ) {
+                throw new \Exception("Missing parameters password, userId, company");
+            }
+            $result=$nc->createNextcloudUserShareSpace(
+                user: $data['userId'],
+                password: $data['password'],
+                company: $data['company']
+            );
+
+            if($result['status'] != 'success') {
+                throw new \Exception("Erreur lors de la creation de l'espaces de stockage de l'utilisateur {$data['userId']} dans Nextcloud");
+            }
+
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => "Utilisateur {$data['userId']} creé dans Nextcloud",
+                'data' => $result
+            ], 200);
+        }catch(\Exception $e) {
+                return new JsonResponse([
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                    'data' => $result
+                ], 400);
         }
     }
 }
