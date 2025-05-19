@@ -4,30 +4,33 @@
     <div class="card-body">
         <?php if(!empty($company['SIREN']) && $display=true): ?>
             <div class="card-title d-flex justify-content-end " >
-                <button id="alerteBodacc" class="btn btn-primary mx-2" >
-                    <i class="bi bi-file-text" style="margin-right: 5px;"></i>Alerte bodacc
+            <a type="button" id="bodacc" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL?>/company/">
+                    <i class="bi bi-house " ></i> Accueil
+                </a>
+                <button id="alerteBodacc" class="btn btn-danger mx-2" >
+                    <i class="bi bi-bell" style="margin-right: 5px;"></i>Alerte bodacc
                 </button>
                 <a type="button" id="bodacc" class="text-white btn btn-primary mx-2" href="https://www.bodacc.fr/pages/annonces-commerciales/?q.registre=registre:<?=$company["SIREN"]?>&refine.familleavis=collective#resultarea">
-                    <i class="bi bi-file-text " ></i>BODACC
+                    <i class="bi bi-file-text " ></i> BODACC
                 </a>
                 <?php if(!empty($company['pappersUrl'])): ?>
                     <a class="text-white btn btn-info mx-2 " type="button" href="<?php echo htmlspecialchars($company['pappersUrl']); ?>" target="_blank">
-                        <i class="bi bi-file-pdf" ></i>PAPPERS
+                        <i class="bi bi-bank" ></i> PAPPERS
                     </a>
                 <?php endif; ?>
                 <?php if(!empty($company['annuaireUrl'])): ?>
                     <a class="text-white btn btn-secondary mx-2" type="button" href="<?php echo htmlspecialchars($company['annuaireUrl']); ?>" target="_blank">
-                        <i class="bi bi-file-pdf" ></i>ANNUAIRE ENTREPRISE
+                        <i class="bi bi-buildings" ></i> ANNUAIRE ENTREPRISE
                     </a>
                 <?php endif; ?>
                 <?php if(!empty($company['pagesJaunesUrl'])): ?>
-                    <a class="text-white btn btn-info mx-2" type="button" href="<?php echo htmlspecialchars($company['pagesJaunesUrl']); ?>" target="_blank">
-                        <i class="bi bi-file-pdf" ></i>PAGES JAUNES
+                    <a class="text-white btn btn-warning mx-2" type="button" href="<?php echo htmlspecialchars($company['pagesJaunesUrl']); ?>" target="_blank">
+                        <i class="bi bi-building-fill" ></i> PAGES JAUNES
                     </a>
                 <?php endif;?>
                 <?php if(!empty($company['societe.comUrl'])): ?>
                     <a class="text-white btn btn-info mx-2 " type="button" href="<?php echo htmlspecialchars($company['societe.comUrl']); ?>" target="_blank">
-                        <i class="bi bi-file-pdf" ></i>SOCIETE.COM
+                        <i class="bi bi-buildings-fill" ></i> SOCIETE.COM
                     </a>
                 <?php endif;?>
                 <?php 

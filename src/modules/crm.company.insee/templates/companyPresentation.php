@@ -75,6 +75,9 @@
     ?>
     <?php include dirname(__FILE__,2) . '/snippets/buttonsBar.php'; ?>
     <div class="container py-4">
+    <?php if (!empty($records=$company["bodaccRecords"])): ?>
+        <div class="p-3 mb-2 bg-danger text-white"><i class="bi bi-exclamation-triangle-fill"></i> <a href="#bodaccRecords" style="all:unset;cursor:pointer;">Alerte : Des procédures collectives sont en cours sur des établissements de l'entreprise!</a></div>
+    <?php endif;?>
         <div class="row mb-4">
             <div class="col">
                 <h1 class="h3"><?php echo htmlspecialchars($company['legalName']).' '. $company["annuaire"]->sigle; ?></h1>
@@ -244,7 +247,7 @@
         
         <!-- BODACC -->
         <?php if (!empty($records=$company["bodaccRecords"])): ?>
-        <div class="info-block">
+        <div class="info-block" id="bodaccRecords">
             <div class="info-header">
                 <h2 class="h5 mb-0"><i class="bi bi-graph-up me-2"></i>Procédures collectives</h2>
             </div>

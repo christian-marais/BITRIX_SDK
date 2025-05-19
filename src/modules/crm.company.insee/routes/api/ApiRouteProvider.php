@@ -54,6 +54,21 @@ class ApiRouteProvider
             ]
         ));
 
+        // Route api pour ajouter une entreprise dans bitrix
+        $this->routes->add('api_update_company', new Route(
+            'api/company/{id}/{siret}/update',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::updateCompany',
+                'methods' => ['GET'],
+                'company' => $this->company,
+                'B24' => $this->B24,
+            ],
+            [
+                'siret' => '\d{14}',
+                'id' => '\d+'
+            ]
+        ));
+
          // Route api pour ajouter un contact dans bitrix
          $this->routes->add('api_add_contact', new Route(
             'api/company/contact/save',
@@ -220,7 +235,7 @@ class ApiRouteProvider
         ));
 
         // Route api pour mettre à jour une entreprise à partir du siret
-        $this->routes->add('api_update_company', new Route(
+        $this->routes->add('api_siret_update_company', new Route(
           'api/company/{siret}/update',
             [
                 '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::updateCompany',

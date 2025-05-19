@@ -55,6 +55,7 @@ class WebRouteProvider
             ]
         ));
 
+
         // Route api pour ajouter un contact dans bitrix
         $this->routes->add('company_upload_file', new Route(
             $this->baseRoute.'{id}/storage/upload/{code}/',
@@ -84,6 +85,15 @@ class WebRouteProvider
             $this->baseRoute,
             [
                 '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\WEB\WebController::viewBlank',
+                'methods' => ['GET'],
+                'company' => $this->company
+            ]
+        ));
+        // Route pour afficher une entreprise par SIRET
+        $this->routes->add('alerts_bodacc_list_view', new Route(
+            $this->baseRoute.'bodacc-alerts',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\WEB\WebController::viewBodacc',
                 'methods' => ['GET'],
                 'company' => $this->company
             ]

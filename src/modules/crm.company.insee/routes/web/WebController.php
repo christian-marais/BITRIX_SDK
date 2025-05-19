@@ -1,11 +1,14 @@
 <?php
 namespace NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\WEB;
 
+use Illuminate\Support\Facades\Date;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Client;
 use Symfony\Component\HttpFoundation\Response;
 use NS2B\SDK\MODULES\CRM\COMPANY\INSEE\CompanyComponent;
 use NS2B\SDK\MODULES\BASE\WebhookManager;
 use NS2B\SDK\DATABASE\DatabaseSQLite;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -50,6 +53,51 @@ class WebController
         }
        
     }
+
+    public function viewBodacc(Request $request,...$params): Response
+    {
+        $date = new \DateTime('now');
+        extract($params);
+        $date->modify('-6 years');
+        $date = $date->format('Ymd');
+        $fields=($this->component?->getCollection()->currentCompany['fields'])['bitrix']??[];
+        $company=$this->component->getCompanies();
+        $filter=[">".$fields["siret"]=>0];
+        $select=["ID",$fields["siret"],'TITLE'];
+        $start=0;
+        $companies=[];
+        $sirens=[];
+        do{
+            $result=$company->list(
+                select:$select,
+                filter:$filter,
+                startItem:$start
+            )->getCompanies();
+            foreach($result as $comp){
+                $siren=str_replace(" ","",substr($comp->__get($fields["siret"]),0,9));
+                $companies[]=[
+                    'COMPANY_ID'=>$comp->__get('ID'),
+                    'TITLE'=>$comp->__get('TITLE'),
+                    'siren'=>$siren
+                ];
+                $sirens[]=$siren;
+            }
+            $start=count($companies);
+        }while($start<$company->countByFilter($filter));
+        error_log('Processing bodaccAlertsCompany...');
+        $company=$this->component->getBodaccAlerts($sirens,$request,$date)->getCompany();
+        $bodaccAlerts=$company["bodaccAlerts"]??[];
+        if(!empty($bodaccAlerts)) {
+            ob_start();
+            include TEMPLATE_DIR.'templatebodacc.php';
+            $content = ob_get_clean();
+            return new Response($content,200);
+        }else{
+          return new Response($content,404);
+        }
+    }
+
+   
 
 
     public function uploadCompanyFile(Request $request,...$params): Response

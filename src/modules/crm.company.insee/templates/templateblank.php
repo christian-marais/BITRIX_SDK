@@ -173,9 +173,9 @@
             console.log('Payload:', JSON.stringify(batch));
         
             try {
-                const go=true;
+                let go=true;
                 setTimeout(async() => {
-                    if(!active==requestKey){
+                    if(active!==requestKey){
                         go=false;
                         return;
                     }
@@ -219,17 +219,17 @@
                                             window.location.href = localUri;
                                         })
                                         <?php endif; ?>
-                                        button.innerText='Voir';
+                                        button.innerText='Bitrix';
                                     }
                                 }
                             }
-                        }else{
+                        }
+                        const id=<?= $company["ID"];?>'';
+                        
+                        if(id){
                             sirets.map(siret => {
-                                const button=document.getElementById('showCompany'+siret);
-                                button.innerText='Ajouter';
-                                button.style.backgroundColor='#0D6EFD';
-                                button.style.color='white';
-                                button.setAttribute('onclick', "addCompanyToBitrix('"+siret+"')");
+                                const button=document.getElementById('updateCompany'+siret);
+                                button.setAttribute('onclick', "updateCompanyToBitrix('"+siret+"','"+id+"')");
                             })
                         }
                     }
@@ -273,7 +273,35 @@
                             window.location.href = localUri;
                         })
                         <?php endif; ?>
-                        btn.innerText='Voir';
+                        btn.innerText='Bitrix';
+                    }
+                }
+            });
+        }
+
+        function updateCompanyToBitrix(siret,id) {
+            data= $.ajax({
+                url: '<?=$baseUrl?>/api/company/'+id+'/'+siret+'/update',
+                method: 'GET',
+                success: function(data) {
+                    console.log("mydatas",data)
+                    if(data.status==='success'){
+                        const btn = document.getElementById('updateCompany'+siret);
+                        const querySelector='#updateCompany'+siret;
+                        const localUri='<?=B24_DOMAIN?>/crm/company/details/'+data.result.id+'/';
+                        const uri='<?=$domain?>/crm/company/details/'+data.result.id+'/';
+                        btn.innerText='Entreprise modifiée';
+                        btn.style.backgroundColor='green';
+                        btn.style.color='white';
+                        btn.removeAttribute('onclick');
+                        <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
+                        setBitrix24Slider(querySelector,uri,localUri);
+                        <?php else: ?>
+                        btn.addEventListener('click', function() {
+                            window.location.href = localUri;
+                        })
+                        <?php endif; ?>
+                        btn.innerText='Continuer';
                     }
                 }
             });
@@ -289,8 +317,10 @@
             function renderEstablishments(etablissements, siren) {
                 
                 return etablissements.map((etablissement, i) => {
+                  
                     const statusBadge =  '<span class="company-badge text-white ' + (etablissement.etat_administratif === 'A' ? ' bg-success ">En activité</span>': 'bg-danger">Fermé</span>');
                     const siegeBadge = etablissement.est_siege ? '<span class="company-badge text-white bg-warning">Siège</span>': '';
+                    
                     return `
                         <div class="establishment-item">
                             <div class="row align-items-center">
@@ -306,15 +336,37 @@
                                 </div>
                                 <div class="col-auto">
                                     <div class="d-flex gap-2">
+                                        <button id="showCompanyInsee${etablissement.siret}" type="button" class="btn btn-primary" data-siret="${etablissement.siret}" data-siren="${siren}">
+                                            INSEE
+                                        </button>
                                         <button id="showCompany${etablissement.siret}" type="button" class="btn btn-primary addCompany add-to-bitrix" data-siret="${etablissement.siret}" data-siren="${siren}">
                                             <i class="bi bi-plus-circle me-2"></i>Recherche...
                                         </button>
+                                    <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED && !empty($company["ID"])): ?>
+                                        <button id="updateCompany${etablissement.siret}" type="button" class="btn btn-primary updateCompany" data-siret="${etablissement.siret}" data-siren="${siren}">
+                                            <i class="bi bi-pencil me-2"></i>Enrichir
+                                        </button>
+                                    <?php endif; ?>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     `;
                 }).join('\n');
+                
+            }
+
+            function showInsee(sirets){
+                sirets.forEach(siret => {
+                    <?php if(defined('IS_B24_IMPLEMENTED') && IS_B24_IMPLEMENTED): ?>
+                        setBitrix24Slider("#showCompanyInsee"+siret,"<?=FULL_BASE_URL?>/company/"+siret);
+                    <?php else: ?>
+                        if(button=document.getElementById("showCompanyInsee"+siret))
+                        {
+                        button.addEventListener('click', ()=>window.location.href = "<?=FULL_BASE_URL?>/company/"+siret);
+                        }
+                    <?php endif; ?>
+                })
             }
 
             searchInput.addEventListener('input', function() {
@@ -355,6 +407,7 @@
                                     </div>
                                 </div>`;
                                 resultsDiv.innerHTML += card;
+                               
                             });
                             const currentRequestKey = Array.from(currentSirets).join(',');
 
@@ -374,7 +427,10 @@
                                 // });
                             });
                             showCompany(sirets);
+                            showInsee(sirets);
                             // },1000)
+
+                           
                         });
                     }
                 });

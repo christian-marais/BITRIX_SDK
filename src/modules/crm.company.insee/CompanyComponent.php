@@ -61,16 +61,24 @@ class CompanyComponent extends CrmCompany{
     }
 
     /**
+     * Retourne les options de verification des certificats SSL
+     *
+     * @return array
+     */
+    public function getHttpOptions(){
+        return $this->HttpOption;
+    }
+    /**
      * Recherche l'entreprise actuelle
      *
      * @return $this
      */
-    public function getCurrentCompany() {
+    public function getCurrentCompany($companyId=null) {
         try {
             if(!$this->hasScope('crm')){
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
-            $company = !empty($id=$this->getContextId())?
+            $company = !empty($id=$companyId??$this->getContextId())?
             $this->B24
                 ->core
                 ->call('crm.company.get', [
@@ -140,26 +148,32 @@ class CompanyComponent extends CrmCompany{
      *
      * @return $this
      */
-    public function updateCompanyToBitrix(array $company=[]){
-
-        try {
-            if(!$this->hasScope('crm'))
-                throw new Exception('Le module ou scope CRM n\'est pas activé');
-            if(empty($company)&&!is_array($company))
-                throw new Exception('Les données de l\'entreprise sont invalides');
+public function updateCompanyToBitrix(array $company=[]){
+    try {
+        if(!$this->hasScope('crm'))
+            throw new Exception('Le module ou scope CRM n\'est pas activé');
+        if(empty($company)&&!is_array($company))
+            throw new Exception('Les données de l\'entreprise sont invalides');
+        if(empty($id=$company["ID"]))
+            throw new  Exception ("L\'ID de l\'entreprise est invalide");
+        unset($company["ID"]);
             $company = $this->B24
                 ->core
                 ->call('crm.item.update', [
                     'entityTypeId' => 4,
-                    'fields' =>$company
+                    'fields' =>$company,
+                    'id'=>$id
                 ])
                 ->getResponseData()
                 ->getResult();
-            
+            return $company;
         }catch (Exception $e) {
             $this->log($e, 'Erreur lors de la mise à jour de l\'entreprise');
-        }finally{
-            return $this;
+            return [
+                'status' => 'error',
+                'message' => $e->getMessage(),
+                'result' => $company
+            ];
         }
     }
 
@@ -283,6 +297,10 @@ class CompanyComponent extends CrmCompany{
         }finally{
             return $this;
         }
+    }
+
+    public function getCompanies(){
+        return $this->B24->getCRMScope()->company();
     }
 
 
@@ -541,14 +559,15 @@ class CompanyComponent extends CrmCompany{
         }
     }
     
-    public function getBodaccAlerts(array $sirens=[],$request = null):self{
+    public function getBodaccAlerts(array $sirens=[],$request = null,$date=null):self{
         try {
             _error_log('Processing getBodaccAlerts');
             if(empty($sirens)||!is_array($sirens))
                 throw new Exception('Il n\'est pas donné un tableau de sirets valide');
             $whereDate=$request->query->get('wheredate')??'>=';
             $client = HttpClient::create($this->HttpOption);
-            $date= "and dateparution $whereDate date'".$request->query->get('date')??(new DateTime('today'))->format('Ymd')."'";
+            $date= "and dateparution $whereDate date'".($date??$request->query->get('date')??(new DateTime('today'))->format('Ymd'))."'";
+            
             $sirens=implode(',',array_map(function ($siren){
                 return "'$siren'";
             }, $sirens));
@@ -559,7 +578,7 @@ class CompanyComponent extends CrmCompany{
             
             if ($response->getStatusCode() != 200)
                 throw new Exception('Erreur lors de la récupération des annonces bodacc entreprise');
-            
+                
             $results=json_decode($response->getContent())->results;
             foreach($results as $alerte){
                 $personnes=json_decode($alerte->listepersonnes??'{}');
@@ -579,6 +598,7 @@ class CompanyComponent extends CrmCompany{
                     'siren'=>$alerte->registre[0]??''
                 ];
             }
+            
             _error_log('Ending getBodaccAlerts');
             $this->companyCollection->currentCompany['bodaccAlerts']=$alertes;
         }catch (Exception $e) {
