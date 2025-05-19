@@ -5,6 +5,7 @@ use \Exception;
 use \DateTime;
 use Symfony\Component\HttpClient\HttpClient;
 use NS2B\SDK\MODULES\BASE\CrmCompany;
+use Throwable;
 use stdClass;
 
 /**
@@ -77,7 +78,7 @@ class CompanyComponent extends CrmCompany{
             [];
             $this->companyCollection->currentCompany = array_merge($this->companyCollection->currentCompany, $company??[]);
             $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields['bitrix']["siret"]]);
-       } catch (Exception $e) {
+       } catch (Throwable $e) {
             $this->log($e, 'Erreur lors de la récupération de l\'entreprise');
         }finally{
             return $this;
@@ -298,7 +299,7 @@ class CompanyComponent extends CrmCompany{
             $this->companyCollection->currentCompany['pagesJaunesUrl']=$pagesJaunes.$siret;
             $this->companyCollection->currentCompany['societe.comUrl']=$societeCom.strtolower(str_replace([' ', '&', '_' , '\'', '-'], '-', $this->companyCollection->currentCompany['legalName']??'').'-'.$siren.'.html');
         
-        }catch(Exception $e){
+        }catch(\Throwable $e){
             $this->log($e, 'Erreur lors de la mise à jour des sources de l\'entreprise');
         }
         return $this;
@@ -320,8 +321,7 @@ class CompanyComponent extends CrmCompany{
                 throw new Exception('Erreur lors de la récupération du bodacc');
             $this->companyCollection->currentCompany['bodacc']=json_decode($response->getContent()??'{}')?->records;
             $this->setBodaccCustomRecord();
-
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             $this->log($e, $e->getMessage());
         }finally{
             return $this;
@@ -388,7 +388,7 @@ class CompanyComponent extends CrmCompany{
             $this->companyCollection->currentCompany["legalForm"]=!empty($company)?$this->companyCollection->currentCompany['insee']->legalForm=$this->getCategoryLabel($company?->etablissement->uniteLegale->categorieJuridiqueUniteLegale??''):null;
             $this->companyCollection->currentCompany["legalName"]=$company->etablissement->uniteLegale->denominationUniteLegale??($company->etablissement->uniteLegale->nomUniteLegale.' '.$company->etablissement->uniteLegale->prenom1UniteLegale);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log($e, $e->getMessage());
         }finally{
             return $this;
@@ -514,7 +514,7 @@ class CompanyComponent extends CrmCompany{
                 error_log('Requesting more result from more page ending...');
             }
             error_log('Requesting more result ending...');
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->log($e, $e->getMessage());
         }finally{
             error_log('Completed getCompanyFromAnnuaire');
@@ -563,7 +563,7 @@ class CompanyComponent extends CrmCompany{
             }
             _error_log('Ending getBodaccAlerts');
             $this->companyCollection->currentCompany['bodaccAlerts']=$alertes;
-        }catch (Exception $e) {
+        }catch (Throwable $e) {
             _error_log($e->getMessage());
             $this->log($e, $e->getMessage());
         }finally{

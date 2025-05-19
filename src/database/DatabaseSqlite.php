@@ -43,6 +43,8 @@ class DatabaseSqlite implements DatabaseInterface {
             $this->database = $databaseName;
             $this->databasePath = __DIR__ . '/' . $databaseName . '.sqlite';
             $this->pdo = new PDO('sqlite:' . $this->databasePath);
+            if(empty($this->pdo))
+                throw new \PDOException('PDO not initialized, please check extensions');
             $this->databaseCollection["history"][]="Création de la base de données $databaseName";
         }catch(PDOException $e){
             error_log($e->getMessage(),destination:__DIR__ . '/error.log');

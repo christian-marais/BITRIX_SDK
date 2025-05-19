@@ -193,7 +193,7 @@ class WebhookManager extends ServiceBuilderFactory
                 _error_log("Le webhook est invalide: ".$this->webhook);
                 throw new \InvalidArgumentException("Le webhook est invalide: $this->webhook");
             }
-        } catch (\InvalidArgumentException $e) {
+        } catch (\Throwable $e) {
             _error_log($e->getMessage());
             $this->log($e,$e->getMessage());
         }
@@ -285,38 +285,45 @@ class WebhookManager extends ServiceBuilderFactory
      * Génère et stocke le HTML à partir d'un template avec des variables
      */
     public function processTemplate(string $template, array $arResult): self
-    {
-        _error_log("Starting processTemplate ...template: $template");
-        if (!isset($arResult['attribut_id'])) {
-            _error_log("La clé 'attribut_id' est requise dans arResult");
-            throw new \InvalidArgumentException("La clé 'attribut_id' est requise dans arResult");
+    {   try{
+            _error_log("Starting processTemplate ...template: $template");
+            if (!isset($arResult['attribut_id'])) {
+                _error_log("La clé 'attribut_id' est requise dans arResult");
+                throw new \InvalidArgumentException("La clé 'attribut_id' est requise dans arResult");
+            }
+            _error_log("Adding template...$template");
+            $html = $this->generateHtml($template, $arResult);
+            _error_log("Added include ...attribut_id: {$arResult['attribut_id']}");
+            $this->addInclude($arResult['attribut_id'], $html);
+            _error_log("Processed template ...attribut_id: {$arResult['attribut_id']}");
+        
+        }catch(\Throwable $e){
+            $this->log($e,$e->getMessage());
         }
-        _error_log("Adding template...$template");
-        $html = $this->generateHtml($template, $arResult);
-        _error_log("Added include ...attribut_id: {$arResult['attribut_id']}");
-        $this->addInclude($arResult['attribut_id'], $html);
-        _error_log("Processed template ...attribut_id: {$arResult['attribut_id']}");
         return $this;
     }
-
+    
     /**
      * Génère le HTML à partir d'un template et de variables
      */
     protected function generateHtml(string $template, array $arResult = [], array $contents= []): string
-    {
-        _error_log("Starting generateHtml ...template: $template");
-        if (!file_exists($template)) {
-            _error_log("Le template '$template' n'existe pas");
-            throw new \RuntimeException("Le template '$template' n'existe pas");
+    {   try{ 
+            _error_log("Starting generateHtml ...template: $template");
+            if (!file_exists($template)) {
+                _error_log("Le template '$template' n'existe pas");
+                throw new \RuntimeException("Le template '$template' n'existe pas");
+            }
+            _error_log("Adding template...$template");
+            ob_start();
+            extract($arResult);
+            include $template;
+            return ob_get_clean();
+
+        }catch(\Throwable $e){
+            $this->log($e,$e->getMessage());
         }
-        _error_log("Adding template...$template");
-        ob_start();
-        extract($arResult);
-        include $template;
-        return ob_get_clean();
     }
     
-
     private function log($e,$message){
         if (defined('DEBUG') && DEBUG){
             echo'<pre>';
@@ -418,67 +425,70 @@ class WebhookManager extends ServiceBuilderFactory
      */
     public function save(Request $request): array
     {   
-        
-        if ($request->isMethod('POST') && $this->hasWebhookTable()) {
-            _error_log("Validating webhook...");
-            $data = json_decode($request->getContent(), true);
-            $webhook = filter_var($data["data"]['webhook'] ?? '', FILTER_VALIDATE_URL);
-            
-            if ($webhook && $this->isValidWebhook($webhook)) {
-                _error_log("Webhook is valid...");
-                $message = [
-                    'status' => 'success',
-                    'message' => 'Webhook '.$webhook.'received successfully '
-                ];
-                $this->webhookCollection->database->deleteAll($this->webhookCollection->entity);
-                if($this->webhookCollection->database->insert(
-                    $this->webhookCollection->entity, 
-                    [
-                    'WEBHOOK' => $this->encryptWebhook($webhook)
-                    ]
-                )){
-                    _error_log("Webhook saved successfully...");
+        try{
+            if ($request->isMethod('POST') && $this->hasWebhookTable()) {
+                _error_log("Validating webhook...");
+                $data = json_decode($request->getContent(), true);
+                $webhook = filter_var($data["data"]['webhook'] ?? '', FILTER_VALIDATE_URL);
+                
+                if ($webhook && $this->isValidWebhook($webhook)) {
+                    _error_log("Webhook is valid...");
                     $message = [
                         'status' => 'success',
-                        'message' => 'Webhook '.$webhook.'saved successfully '
+                        'message' => 'Webhook '.$webhook.'received successfully '
+                    ];
+                    $this->webhookCollection->database->deleteAll($this->webhookCollection->entity);
+                    if($this->webhookCollection->database->insert(
+                        $this->webhookCollection->entity, 
+                        [
+                        'WEBHOOK' => $this->encryptWebhook($webhook)
+                        ]
+                    )){
+                        _error_log("Webhook saved successfully...");
+                        $message = [
+                            'status' => 'success',
+                            'message' => 'Webhook '.$webhook.'saved successfully '
+                        ];
+                    }
+                    
+                }else{
+                    _error_log("Webhook not valid : ".$data["data"]['webhook']);
+                    $message = [
+                        'status' => 'error',
+                        'message' => 'Webhook not valid : '.$data["data"]['webhook']
                     ];
                 }
-                
             }else{
-                _error_log("Webhook not valid : ".$data["data"]['webhook']);
+                _error_log("Method not allowed");
                 $message = [
                     'status' => 'error',
-                    'message' => 'Webhook not valid : '.$data["data"]['webhook']
+                    'message' => 'Method not allowed'
                 ];
             }
-        }else{
-            _error_log("Method not allowed");
-            $message = [
-                'status' => 'error',
-                'message' => 'Method not allowed'
-            ];
+            _error_log("Ending save...");
+        }catch(\Throwable $e){
+            $this->log($e,$e->getMessage());
         }
-        _error_log("Ending save...");
         return $message;
     }
-
     
-
     /**
      * Affiche la page avec la popup de webhook
      */
     public function renderWebhookPopup($arResult=[]): self
-    {
-        _error_log("Rendering webhook popup...");
-        $this->processTemplate(__DIR__ . '/snippets/popupTemplate.php', [
-            'attribut_id' => 'main-content',
-            'webhookUrl' => $this->getWebhook()??'',
-            'arResult' => $arResult
-        ]);
-        _error_log("Ending rendering...");
-        return $this;
+    {   try{
+            _error_log("Rendering webhook popup...");
+            $this->processTemplate(__DIR__ . '/snippets/popupTemplate.php', [
+                'attribut_id' => 'main-content',
+                'webhookUrl' => $this->getWebhook()??'',
+                'arResult' => $arResult
+            ]);
+            _error_log("Ending rendering...");
+    }catch(\Throwable $e){
+        $this->log($e,$e->getMessage());
     }
-
+    return $this;
+}
     /**
      * Affiche la page d'accueil
      */
@@ -495,33 +505,36 @@ class WebhookManager extends ServiceBuilderFactory
      * @return string Le webhook crypté en base64
      */
     public function encryptWebhook(string $webhook): string 
-    {
-        _error_log("Encrypting webhook...");
-        // Générer une clé sécurisée et un vecteur d'initialisation
-        $key = openssl_random_pseudo_bytes(self::KEY_LENGTH);
-        $iv = openssl_random_pseudo_bytes(self::IV_LENGTH);
+    {   try{
+            _error_log("Encrypting webhook...");
+            // Générer une clé sécurisée et un vecteur d'initialisation
+            $key = openssl_random_pseudo_bytes(self::KEY_LENGTH);
+            $iv = openssl_random_pseudo_bytes(self::IV_LENGTH);
+            
+            // Crypter le webhook
+            $encrypted = openssl_encrypt(
+                $webhook,
+                self::CIPHER_METHOD,
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv
+            );
+            
+            if ($encrypted === false) {
+                throw new \RuntimeException("Erreur lors du cryptage du webhook");
+            }
         
-        // Crypter le webhook
-        $encrypted = openssl_encrypt(
-            $webhook,
-            self::CIPHER_METHOD,
-            $key,
-            OPENSSL_RAW_DATA,
-            $iv
-        );
-        
-        if ($encrypted === false) {
-            throw new \RuntimeException("Erreur lors du cryptage du webhook");
+            // Combiner IV + clé + données cryptées
+            $combined = $iv . $key . $encrypted;
+            
+            // Encoder en base64 pour stockage sécurisé
+            _error_log("Ending encrypting...");
+            return base64_encode($combined);
+        }catch(\Throwable $e){
+            $this->log($e,$e->getMessage());
+            return '';
         }
-        
-        // Combiner IV + clé + données cryptées
-        $combined = $iv . $key . $encrypted;
-        
-        // Encoder en base64 pour stockage sécurisé
-        _error_log("Ending encrypting...");
-        return base64_encode($combined);
     }
-
     /**
      * Décrypte une URL de webhook
      * @param string $encryptedWebhook Le webhook crypté en base64
@@ -529,40 +542,45 @@ class WebhookManager extends ServiceBuilderFactory
      */
     public function decryptWebhook($encryptedWebhook): string {
         _error_log("Decrypting webhook...");
-        if(empty($encryptedWebhook)||!is_string($encryptedWebhook)){
-            _error_log("Empty or invalid encrypted webhook");
+        try{
+            if(empty($encryptedWebhook)||!is_string($encryptedWebhook)){
+                _error_log("Empty or invalid encrypted webhook");
+                return '';
+            }
+            $database = $this->webhookCollection->database;
+            // Décoder le webhook crypté
+            $combined = base64_decode($encryptedWebhook);
+            
+            if ($combined === false) {
+                _error_log("Invalid combined");
+                throw new \RuntimeException("Données de webhook invalides");
+            }
+            
+            // Extraire IV, clé et données cryptées
+            $iv = substr($combined, 0, self::IV_LENGTH);
+            $key = substr($combined, self::IV_LENGTH, self::KEY_LENGTH);
+            $encrypted = substr($combined, self::IV_LENGTH + self::KEY_LENGTH);
+            
+            // Décrypter le webhook
+            $decrypted = openssl_decrypt(
+                $encrypted,
+                self::CIPHER_METHOD,
+                $key,
+                OPENSSL_RAW_DATA,
+                $iv
+            );
+            
+            if ($decrypted === false) {
+                _error_log("Invalid decrypted...deleting webhook entity...");
+                $database->deleteAll($this->webhookCollection->entity);
+                throw new \RuntimeException("Erreur lors du décryptage du webhook");
+            }
+            _error_log("Ending decrypting...");
+            return $decrypted;
+        }catch(\Throwable $e){
+            $this->log($e,$e->getMessage());
             return '';
         }
-        $database = $this->webhookCollection->database;
-        // Décoder le webhook crypté
-        $combined = base64_decode($encryptedWebhook);
-        
-        if ($combined === false) {
-            _error_log("Invalid combined");
-            throw new \RuntimeException("Données de webhook invalides");
-        }
-        
-        // Extraire IV, clé et données cryptées
-        $iv = substr($combined, 0, self::IV_LENGTH);
-        $key = substr($combined, self::IV_LENGTH, self::KEY_LENGTH);
-        $encrypted = substr($combined, self::IV_LENGTH + self::KEY_LENGTH);
-        
-        // Décrypter le webhook
-        $decrypted = openssl_decrypt(
-            $encrypted,
-            self::CIPHER_METHOD,
-            $key,
-            OPENSSL_RAW_DATA,
-            $iv
-        );
-        
-        if ($decrypted === false) {
-            _error_log("Invalid decrypted...deleting webhook entity...");
-            $database->deleteAll($this->webhookCollection->entity);
-            throw new \RuntimeException("Erreur lors du décryptage du webhook");
-        }
-        _error_log("Ending decrypting...");
-        return $decrypted;
     }
-
+    
 }
