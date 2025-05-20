@@ -13,7 +13,7 @@ define ("FULL_BASE_URL",HTTPS.$request->server->get("HTTP_HOST").$request->serve
 define("BASE_URL",$request->server->get("SCRIPT_NAME").'/'??'/src/modules/crm.company.insee/index.php/');
 const TEMPLATE_DIR=MODULE_DIR.'crm.company.insee/templates/';
 const DEBUG = false;
-const IS_B24_IMPLEMENTED=false;
+const IS_B24_IMPLEMENTED=true;
 // const BASE_URL='/src/modules/crm.company.insee/index.php/';
 
 

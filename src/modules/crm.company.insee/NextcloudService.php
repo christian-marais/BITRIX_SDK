@@ -40,7 +40,7 @@ class NextcloudService
             }
             $rootPath='/public/';
             $groupPath=$rootPath.($company??'unknown');
-            $folderPath=$groupPath."/".$user;
+            $folderPath=$groupPath;//"/".$user;
             if(
                 ($result[0]=$this->getUser($user))["status"]==="fail" &&
                 ($result[1]=$this->createUser($user,$password))["status"]==="fail"
@@ -49,11 +49,11 @@ class NextcloudService
             }
             
             $result[2]=$this->createFolder($this->adminUser,$rootPath);
-            $result[3]=$this->createFolder($this->adminUser,$groupPath);
+            $result[3]='No subfolder needed';//$this->createFolder($this->adminUser,$groupPath);
             $result[4]=$this->createFolder($this->adminUser,$folderPath);
             if(
                 $result[2]["status"]==="fail" &&
-                $result[3]["status"]==="fail" &&
+                // $result[3]["status"]==="fail" &&
                 $result[4]["status"]==="fail"
             ){
                 throw new \Exception("Failed to create folder:".$folderPath);
@@ -69,7 +69,7 @@ class NextcloudService
                 'data' => $result,
                 'message' => 'User :'.$user.' shared with success folder :'.$folderPath,
                 'method' => 'createNextCloudUserShareSpace',
-                'folderPath' => $this->baseUrl.$folderPath
+                'folderPath' => $this->baseUrl.'/apps/files/files?dir='.$folderPath
             ];
         }catch(\Exception $e){
              return [
@@ -227,16 +227,20 @@ class NextcloudService
                 'body' => [
                     'userid' => $username,
                     'password' => $password,
-                    'email' => $username,
+                    // 'email' => $username,
                 ],
             ]);
-            if ($response->getStatusCode() != 200) {
-                throw new \Exception('Failed to create user');
+            
+            if(
+                $response->getStatusCode() != 200 || 
+                (($result=json_decode($response->getContent(), true))["ocs"]["meta"]["status"]??[]) == 'failure'
+            ) {
+                throw new \Exception('Failed to create user - '.$result['ocs']['meta']['message']??'');
             }
-            $response = json_decode($response->getContent(), true);
+            
             return [
                 'status' => 'success',
-                'data' => $response['ocs']['data']??[],
+                'data' => $result['ocs']['data']??[],
                 'message' => 'User :'.$username.' created with success',
                 'method' => 'createUser'
             ];

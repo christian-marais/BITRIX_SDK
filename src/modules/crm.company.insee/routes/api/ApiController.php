@@ -708,6 +708,7 @@ class ApiController
             ) {
                 throw new \Exception("Missing parameters password, userId, company");
             }
+
             $result=$nc->createNextcloudUserShareSpace(
                 user: $data['userId'],
                 password: $data['password'],

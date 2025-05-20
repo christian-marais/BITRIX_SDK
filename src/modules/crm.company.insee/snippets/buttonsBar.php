@@ -56,15 +56,15 @@
                     fetch("<?=FULL_BASE_URL?>/api/nextcloud/folder/find", {
                     method: 'POST',
                     body: JSON.stringify({
-                        userId: "<?=$company[$fields['NextcloudAccount']]?>",
-                        company: "<?=$companyLabel=$company['legalName'].$company['SIRET']?>",
-                        folderName: "/public/<?=$companyLabel.'/'.$company[$fields['NextcloudAccount']]?>"
+                        userId: "<?=($company[$fields['NextcloudAccount']])?>",
+                        company: "<?=($companyLabel=$company['legalName'].$company['SIRET'])?>",
+                        folderName: "/public/<?=$companyLabel?>"
                         })
                     }).then(function(response) {
                         return response.json();
                     }).then(function(data) {
                         if(data.status=="success"){
-                            console.log("fodlerfound",data);
+                            console.log("folderfound",data);
                             $('#nextcloud').text('Ouvrir le drive Nextcloud');
                             $('#nextcloud').unbind('click');
                             $('#nextcloud').click(function() {
@@ -81,9 +81,9 @@
                 function createUserSpace(){
                     $('#nextcloud').click(function(){
                         const data={
-                            userId: "<?=$company[$fields['NextcloudAccount']]?>",
-                            password: "<?=$company[$fields['NextcloudPassword']]?>",
-                            company: "<?=$companyLabel=$company['legalName'].$company['SIRET']?>"
+                            userId: "<?=($company[$fields['NextcloudAccount']]) ?>",
+                            password: "<?=($company[$fields['NextcloudPassword']]) ?>",
+                            company: "<?=($companyLabel=$company['legalName'].$company['SIRET'])?>"
                         }
                         $.ajax({
                             url: "<?=FULL_BASE_URL?>/api/nextcloud/space/create",
@@ -94,69 +94,70 @@
                                 alert('Profil Nextcloud créé avec succès !');
                                 $('#nextcloud').text('Ouvrir le drive');
                                 $('#nextcloud').unbind('click');
+                                console.log("nextcloud data",response.data)
                                 $('#nextcloud').click(function() {
-                                    window.open(response.data, '_blank');
+                                    window.open(response.data.folderPath, '_blank');
                                 });
                             },
                             error: function(xhr, status, error) {
                                 console.info("User space Info",data)
-                                console.error("nextcloud response", response);
+                                console.error("nextcloud status", status);
                                 console.log("nextcloud error", xhr);
-                                alert('Erreur lors de la creation du profil Nextcloud');
+                                alert('Erreur lors de la creation du profil Nextcloud. Le mot de passe doit être au moins de 10 caractères.Erreur : '+error);
                             }
                         });
                     });
                 }
-                $('#saveWebhook').click(function() {
-                    const webhook = prompt("Veuillez entrer le webhook Bitrix :");
-                    if (webhook) {
-                        $.ajax({
-                            url: '/api/webhook/save',
-                            method: 'POST',
-                            data: { webhook: webhook },
-                            success: function(response) {
-                                alert('Webhook sauvegardé avec succès !');
-                                location.reload();
-                            },
-                            error: function() {
-                                alert('Erreur lors de la sauvegarde du webhook');
-                            }
-                        });
-                    }
-                });
+                // $('#saveWebhook').click(function() {
+                //     const webhook = prompt("Veuillez entrer le webhook Bitrix :");
+                //     if (webhook) {
+                //         $.ajax({
+                //             url: '/api/webhook/save',
+                //             method: 'POST',
+                //             data: { webhook: webhook },
+                //             success: function(response) {
+                //                 alert('Webhook sauvegardé avec succès !');
+                //                 location.reload();
+                //             },
+                //             error: function() {
+                //                 alert('Erreur lors de la sauvegarde du webhook');
+                //             }
+                //         });
+                //     }
+                // });
 
-                // Fonction pour ajouter/consulter une entreprise
-                $('#addCompany').click(function() {
-                    const companyData = $(this).data('company');
-                    $.ajax({
-                        url: '/api/company/check',
-                        method: 'POST',
-                        data: companyData,
-                        success: function(response) {
-                            if (response.exists) {
-                                $('#addCompany').hide();
-                                $('#viewCompany').show()
-                                    .attr('href', response.url)
-                                    .click(function() {
-                                        window.location.href = response.url;
-                                    });
-                            } else {
-                                $.ajax({
-                                    url: '/api/company/add',
-                                    method: 'POST',
-                                    data: companyData,
-                                    success: function(response) {
-                                        alert('Entreprise ajoutée avec succès !');
-                                        location.reload();
-                                    },
-                                    error: function() {
-                                        alert('Erreur lors de l\'ajout de l\'entreprise');
-                                    }
-                                });
-                            }
-                        }
-                    });
-                });
+                // // Fonction pour ajouter/consulter une entreprise
+                // $('#addCompany').click(function() {
+                //     const companyData = $(this).data('company');
+                //     $.ajax({
+                //         url: '/api/company/check',
+                //         method: 'POST',
+                //         data: companyData,
+                //         success: function(response) {
+                //             if (response.exists) {
+                //                 $('#addCompany').hide();
+                //                 $('#viewCompany').show()
+                //                     .attr('href', response.url)
+                //                     .click(function() {
+                //                         window.location.href = response.url;
+                //                     });
+                //             } else {
+                //                 $.ajax({
+                //                     url: '/api/company/add',
+                //                     method: 'POST',
+                //                     data: companyData,
+                //                     success: function(response) {
+                //                         alert('Entreprise ajoutée avec succès !');
+                //                         location.reload();
+                //                     },
+                //                     error: function() {
+                //                         alert('Erreur lors de l\'ajout de l\'entreprise');
+                //                     }
+                //                 });
+                //             }
+                //         }
+                //     });
+                // });
             });
             </script>
         <?php else :?>  
