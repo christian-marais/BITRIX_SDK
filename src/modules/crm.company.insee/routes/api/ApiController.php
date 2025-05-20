@@ -78,42 +78,48 @@ class ApiController
         }
     }
 
+    private function getCompaniesSirenWithAlerts(Request $request,$params=[]){
+        extract($params);
+        $fields=($this->companyComponent?->getCollection()->currentCompany['fields'])['bitrix']??[];
+        $company=$B24->getCRMScope()->company();
+        $filter=[">".$fields["siret"]=>0];
+        $select=["ID",$fields["siret"],'TITLE'];
+        $start=0;
+        $companies=[];
+        $sirens=[];
+        do{
+            $result=$company->list(
+                select:$select,
+                filter:$filter,
+                startItem:$start
+            )->getCompanies();
+            foreach($result as $comp){
+                $siren=str_replace(" ","",substr($comp->__get($fields["siret"]),0,9));
+                $companies[]=[
+                    'COMPANY_ID'=>$comp->__get('ID'),
+                    'TITLE'=>$comp->__get('TITLE'),
+                    'siren'=>$siren
+                ];
+                $sirens[]=$siren;
+            }
+            $start=count($companies);
+        }while($start<$company->countByFilter($filter));
+        return [
+            'sirens'=>$sirens,
+            'companies'=>$companies
+        ];
+       
+        
+    }
+
     public function bodaccAlertsCompany(Request $request,...$params): Response
     {   
         error_log('Starting bodaccAlertsCompany...');
         try {
-            extract($params);
-            // $sirets=$request->query->all();
-            
-            // if(!isset($sirets) && !is_array($sirets)){
-            //     throw new \Exception('An array of Sirets is required');
-            // }
-            $fields=($this->companyComponent?->getCollection()->currentCompany['fields'])['bitrix']??[];
-            $company=$B24->getCRMScope()->company();
-            $filter=[">".$fields["siret"]=>0];
-            $select=["ID",$fields["siret"],'TITLE'];
-            $start=0;
-            $companies=[];
-            $sirens=[];
-            do{
-                $result=$company->list(
-                    select:$select,
-                    filter:$filter,
-                    startItem:$start
-                )->getCompanies();
-                foreach($result as $comp){
-                    $siren=str_replace(" ","",substr($comp->__get($fields["siret"]),0,9));
-                    $companies[]=[
-                        'COMPANY_ID'=>$comp->__get('ID'),
-                        'TITLE'=>$comp->__get('TITLE'),
-                        'siren'=>$siren
-                    ];
-                    $sirens[]=$siren;
-                }
-                $start=count($companies);
-            }while($start<$company->countByFilter($filter));
             error_log('Processing bodaccAlertsCompany...');
-            $company=$this->companyComponent->getBodaccAlerts($sirens,$request)->getCollection()->currentCompany;
+            $companies=$this->getCompaniesSirenWithAlerts($request,$params);
+            $company=$this->companyComponent->getBodaccAlerts($sirens=$companies["sirens"],$request)->getCollection()->currentCompany;
+            $companies=$companies["companies"];
             $alertes=$company["bodaccAlerts"]??[];
             foreach($alertes as $key=>$alerte){
                 foreach($companies as $company){
@@ -141,6 +147,31 @@ class ApiController
         }
 
     }
+
+    public function notifyBodaccAlerts(Request $request,...$params){
+        $companies=$this->getCompaniesSirenWithAlerts($request,$params);
+        $sirens=$companies["sirens"];
+        if(!isset($sirens) && !is_array($sirens)){
+            throw new \Exception('An array of Sirets is required');
+        }
+        try {
+            $result=$this->companyComponent->notifyBodaccAlerts($sirens,$request,"20190305",$companies);
+            if($result['status']=="fail"){
+                throw new \Exception($result['message']);
+            }
+            return new JsonResponse([
+                'status' => 'success',
+                'message' => 'Bodacc alerts notified successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            error_log('Error response notifyBodaccAlerts...');
+            return new JsonResponse([
+                'status' => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
 
     public function updateCompany(Request $request,...$params): Response
     {

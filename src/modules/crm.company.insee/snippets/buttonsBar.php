@@ -7,9 +7,9 @@
             <a type="button" id="bodacc" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL?>/company/">
                     <i class="bi bi-house " ></i> Accueil
                 </a>
-                <button id="alerteBodacc" class="btn btn-danger mx-2" >
-                    <i class="bi bi-bell" style="margin-right: 5px;"></i>Alerte bodacc
-                </button>
+                <a type="button" id="alertesBodacc" class="btn btn-danger mx-2" href="<?=FULL_BASE_URL?>/company/bodacc-alerts">
+                    <i class="bi bi-bell" style="margin-right: 5px;"></i>Alertes bodacc
+                </a>
                 <a type="button" id="bodacc" class="text-white btn btn-primary mx-2" href="https://www.bodacc.fr/pages/annonces-commerciales/?q.registre=registre:<?=$company["SIREN"]?>&refine.familleavis=collective#resultarea">
                     <i class="bi bi-file-text " ></i> BODACC
                 </a>

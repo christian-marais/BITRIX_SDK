@@ -106,11 +106,22 @@ class ApiRouteProvider
             ]
         ));
 
-        // Route api pour modifier une entreprise dans bitrix
+        // Route api pour récupérer les alertes bodacc dans bitrix
         $this->routes->add('api_bodacc_alerts_company', new Route(
             'api/company/bodacc-alerts',
             [
                 '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::bodaccAlertsCompany',
+                'methods' => ['GET'],
+                'company' => $this->company,
+                'B24' => $this->B24,
+            ]
+        ));
+
+        // Route api pour notifier les alertes bodacc dans bitrix
+        $this->routes->add('api_notify_bodacc_alerts_company', new Route(
+            'api/company/bodacc-alerts/notify',
+            [
+                '_controller' => 'NS2B\SDK\MODULES\CRM\COMPANY\INSEE\ROUTES\API\ApiController::notifyBodaccAlerts',
                 'methods' => ['GET'],
                 'company' => $this->company,
                 'B24' => $this->B24,

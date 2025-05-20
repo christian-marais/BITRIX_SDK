@@ -584,18 +584,23 @@ public function updateCompanyToBitrix(array $company=[]){
                 $personnes=json_decode($alerte->listepersonnes??'{}');
                 $jugement=json_decode($alerte->jugement??'{}');
                 $alertes[str_replace(" ","", $alerte->registre[0]??'')]=[
-                    'jugement'=>$jugement->nature??'',
-                    'contenu'=>$jugement->complementJugement??'',
-                    'datejugement'=>$jugement->date??'',
-                    'id'=>$alerte->id??'',
-                    'activite'=>$personnes->activite??'',
-                    'forme juridique'=>$personnes->forme_juridique??'',
-                    'adresse'=>$personnes->numeroVoie??''.' '.$personnes->typeVoie??''.' '.$personnes->nomVoie??''.' '.$personnes->codePostal??''.' '.$personnes->ville??'',
-                    'typePersonne'=>$personnes->typePersonne??'',
-                    'nom'=>$personnes->nom??'',
-                    'dateparution'=>$alerte->dateparution??'',
-                    'url'=>$alerte->url_complete??'',
-                    'siren'=>$alerte->registre[0]??''
+                    'jugement'=>property_exists($jugement,'nature')?$jugement->nature:'',
+                    'contenu'=>property_exists($jugement,'complementJugement')?$jugement->complementJugement:'',
+                    'datejugement'=>property_exists($jugement,'date')?$jugement->date:'',
+                    'id'=>property_exists($alerte,'id')?$alerte->id:'',
+                    'activite'=>property_exists($personnes,'activite')?$personnes->activite:'',
+                    'forme juridique'=>property_exists($personnes,'forme_juridique')?$personnes->forme_juridique:'',
+                    'adresse'=>
+                    (property_exists($personnes,'numeroVoie')?$personnes->numeroVoie:'').' '.
+                    (property_exists($personnes,"typeVoie")?$personnes->typeVoie:'').' '.
+                    (property_exists($personnes,"nomVoie")?$personnes->nomVoie:'').' '.
+                    (property_exists($personnes,"codePostal")?$personnes->codePostal:'').' '.
+                    (property_exists($personnes,"ville")?$personnes->ville:''),
+                    'typePersonne'=>property_exists($personnes,'typePersonne')?$personnes->typePersonne:'',
+                    'nom'=>property_exists($personnes,'nom')?$personnes->nom:'',
+                    'dateparution'=>property_exists($alerte,'dateparution')?$alerte->dateparution:'',
+                    'url'=>property_exists($alerte,'url_complete')?$alerte->url_complete:'',
+                    'siren'=>property_exists($alerte,'registre')?$alerte->registre[0]??'':''
                 ];
             }
             
@@ -609,11 +614,42 @@ public function updateCompanyToBitrix(array $company=[]){
         }
     }
 
+    public function notifyBodaccAlerts($sirens=null,$request=null,$date=null,$companies=null){
+        try{
+            $alertes=$this->getBodaccAlerts($sirens,$request,$date)->getCompany()["bodaccAlerts"];
+            if(empty($alertes)|| !is_array($alertes)){
+                throw new Exception("Erreur: Lors de la récupération des alertes. Aucune alerte bodacc n'a été remontée");
+            }
+            foreach($alertes as $key=>$alerte){
+                foreach($companies["companies"] as $company){
+                    if($alerte['siren']==$company['siren']){
+                        $alertes[$key]=array_merge($company??[],$alerte??[]);
+                    }
+                }
+            }
+            foreach($alertes as $alerte){
+                $message='L\'entreprise [url='.B24_DOMAIN.'/crm/company/details/'.$alerte["COMPANY_ID"].'/]'.$alerte['TITLE'].'[/url] a [url='.$alerte["url"].']une procédure collective[/url] en cours!';
+                $this->notify($message,12);
+            }
+        }catch(Exception $e){
+            _error_log($msg=$e->getMessage());
+            $this->log($e, $msg);
+            return[
+                'status'=>"fail",
+                'message'=>$msg
+            ];
+        }
+        return [
+            'status'=>"suc",
+            'message'=>'Alertes bodacc envoyées'
+        ];
+    }
 
     public function setInseeKey($key){
         $this->inseeKey = $key;
         return $this;
     }
+
     public function setCustomSiret($siret=''){
         $this->companyCollection->currentCompany["SIRET"] = ($siret=str_replace(' ','',$siret));
         $this->companyCollection->currentCompany["SIREN"] =substr($siret, 0, 9);

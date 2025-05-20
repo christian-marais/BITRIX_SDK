@@ -113,7 +113,7 @@
                     <div class="input-group">
                         <input type="text" id="searchInput" class="form-control search-input" 
                                placeholder="Rechercher par nom, SIRET, SIREN..." 
-                               aria-label="Recherche">
+                               aria-label="Recherche" value="<?php !empty($company['TITLE'])?$company['TITLE']:'';?>">
                         <button class="btn btn-primary search-button" type="button" id="button-addon2">
                             <i class="bi bi-search me-2"></i>Rechercher
                         </button>

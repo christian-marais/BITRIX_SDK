@@ -140,16 +140,17 @@ abstract class Base{
      * @param string $message
      * @return bool
      */
-    public function notify(string $message,$user=null){
-        $user = 
-        (method_exists($USER, 'getContext') && $USER->getContext()?->getUserId())?
-        $user??$USER->getContext()?->getUserId():
-        $user;
+public function notify(string $message,$user=null){
+    if(!$this->hasScope('im')){echo'test';}
+        
+        // (method_exists($USER, 'getContext') && $USER->getContext()?->getUserId())?
+        // $user??$USER->getContext()?->getUserId():
+        // $user;
         if(
             !empty($this->B24) &&
             !empty($user) 
         ){
-            return $this->B24->core->call('user.notify.personal.add', [
+            return $this->B24->core->call('im.notify.system.add', [
                 'USER_ID' => (int) $user,
                 'MESSAGE' => (string) $message
             ]);
