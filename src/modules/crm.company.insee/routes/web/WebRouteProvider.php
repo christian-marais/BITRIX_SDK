@@ -119,6 +119,10 @@ class WebRouteProvider
         return $this->routes;
     }
 
+    public function routes($name = null,$params = []){
+        return $this->routes->get($name);
+    }
+
     public function launch(Request $request): Response
     {
         // Créer le contexte de la requête

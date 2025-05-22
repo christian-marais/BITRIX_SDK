@@ -79,22 +79,17 @@ class CompanyComponent extends CrmCompany{
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
             $company = !empty($id=$companyId??$this->getContextId())?
-            $this->B24
-                ->core
-                ->call('crm.company.get', [
+            $this->b24request(
+                'crm.company.get',
+                [
                     'ID' => $id,
-                    'SELECT' => [
-                        '*',
-                        ...$this->fields['bitrix']
-                    ]
-                ])
-                ->getResponseData()
-                ->getResult():
-            null;
+                    'SELECT' => ['*',...$this->fields['bitrix']]
+                ]
+            ):null;
             $this->companyCollection->currentCompany = array_merge($this->companyCollection->currentCompany, $company??[],['fields'=>$this->fields]);
-            
+
             $this->getCompanyContacts();
-            $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields['bitrix']["siret"]]);
+            $this->setCustomSiret($this->companyCollection->currentCompany[$this->fields['bitrix']["siret"]]??'');
        } catch (Exception $e) {
             $this->log($e, 'Erreur lors de la récupération de l\'entreprise');
         }finally{
@@ -102,6 +97,17 @@ class CompanyComponent extends CrmCompany{
         }
     }
 
+    /**
+     *Appel à l'api bitrix 24
+     */
+    private function b24Request(string $method, array $params){
+        return $this->B24
+            ->core
+            ->call($method, $params)
+            ->getResponseData()
+            ->getResult();
+    }
+    
     /**
      * Recherche l'entreprise avec le numéro SIRET
      *
@@ -119,18 +125,10 @@ class CompanyComponent extends CrmCompany{
             if(!$this->hasScope('crm'))
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             
-            $company = $this->B24
-                ->core
-                ->call('crm.company.list', [
-                    'SELECT' => [
-                        '*',...$this->fields['bitrix']
-                    ],
-                    'FILTER' => [
-                        $this->fields['bitrix']["siret"]=> $siret
-                    ]
-                ])
-                ->getResponseData()
-                ->getResult()[0]??null;
+            $company = $this->b24Request('crm.company.list', [
+                    'SELECT' => ['*',...$this->fields['bitrix']],
+                    'FILTER' => [$this->fields['bitrix']["siret"]=> $siret]
+                ])[0]??null;
             $this->companyCollection->currentCompany = $company;
             $this->companyCollection->currentCompany['fields']=$this->fields;
             $this->setCustomSiret($siret);
@@ -157,16 +155,13 @@ public function updateCompanyToBitrix(array $company=[]){
         if(empty($id=$company["ID"]))
             throw new  Exception ("L\'ID de l\'entreprise est invalide");
         unset($company["ID"]);
-            $company = $this->B24
-                ->core
-                ->call('crm.item.update', [
+           return $company = $this->b24request(
+                'crm.item.update', 
+                [
                     'entityTypeId' => 4,
                     'fields' =>$company,
                     'id'=>$id
-                ])
-                ->getResponseData()
-                ->getResult();
-            return $company;
+                ]);
         }catch (Exception $e) {
             $this->log($e, 'Erreur lors de la mise à jour de l\'entreprise');
             return [
@@ -195,13 +190,7 @@ public function updateCompanyToBitrix(array $company=[]){
             $this->fields["bitrix"]['date_cloture_mention']=>$company[$this->fields["bitrix"]['date_cloture']],
         ];
         unset($requisite[""]);
-        return $requisite= $this->B24
-            ->core
-            ->call('crm.requisite.add', [
-                'fields' =>$requisite
-            ])
-            ->getResponseData()
-            ->getResult()[0];
+        return $this->b24request('crm.requisite.add', ['fields' =>$requisite])[0];
     }
 
     private function addAddress($company){
@@ -216,15 +205,9 @@ public function updateCompanyToBitrix(array $company=[]){
             $this->fields["bitrix"]['rue_mention']=>$company[$this->fields["bitrix"]['rue_mention']]
         ];
         unset($address[""]);
-        return $address= $this->B24
-            ->core
-            ->call('crm.address.add', [
-                'fields' =>$address
-            ])
-            ->getResponseData()
-            ->getResult()[0];
+        return $this->b24request('crm.address.add', ['fields' =>$address])[0];
     }
-
+    
     /**
      * Ajoute l'entreprise à bitrix
      *
@@ -238,14 +221,7 @@ public function updateCompanyToBitrix(array $company=[]){
             if(empty($company)&&!is_array($company))
                 throw new Exception('Les données de l\'entreprise sont invalides');
            
-                $company["ID"]= $this->B24
-                ->core
-                ->call('crm.company.add', [
-                    // 'entityTypeId' => 4,
-                    'fields' =>$company
-                ])
-                ->getResponseData()
-                ->getResult()[0];
+                $company["ID"]= $this->b24request('crm.company.add', ['fields' =>$company])[0]; // 'entityTypeId' => 4,
             $requisite=$this->addRequisite($company);
             $address=$this->addAddress($company);
          
@@ -254,7 +230,6 @@ public function updateCompanyToBitrix(array $company=[]){
                 'message' => 'Entreprise ajoutée avec succès:'.$company["ID"],
                 'result' => $company["ID"]
             ];
-            
         }catch (Exception $e) {
             $this->log($e, 'Erreur lors de l\'ajout de l\'entreprise');
             return [
@@ -272,26 +247,19 @@ public function updateCompanyToBitrix(array $company=[]){
      */
     public function getCompanyRequisite(){
         try {
-           
             if(!$this->hasScope('crm')){
                 throw new Exception('Le module ou scope CRM n\'est pas activé');
             }
-
-            $requisite = !empty($id=$this->getContextId()??$this->companyCollection->currentCompany['ID'])?
-            $this->B24
-                ->core
-                ->call('crm.requisite.list', [
+            $requisite = !empty($id=$this->getContextId()??$this->companyCollection->currentCompany['ID']??null)?
+            $this->b24request('crm.requisite.list', [
                 'filter' => [
                     'ENTITY_ID' => $id,
                     'ENTITY_TYPE_ID' => $this->entityTypeId
                 ],
                 'select' => [$this->fields['bitrix']["pappersUrl_mention"],'*']
-                ])
-                ->getResponseData()
-                ->getResult()[0]??null
-                :null;
-                $this->companyCollection->currentCompany['requisite'] = !empty($requisite)?$requisite:null;
-
+                ])[0]??null
+            :null;
+            $this->companyCollection->currentCompany['requisite'] = !empty($requisite)?$requisite:null;
         } catch (Exception $e) {
             $this->log($e, 'Erreur lors de la récupération des détails de l\'entreprise');
         }finally{
@@ -313,22 +281,22 @@ public function updateCompanyToBitrix(array $company=[]){
      * @return $this
      */
     public function setCompanySourcesUrl(){
+        $bodacc="https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q=";
+        $pappers="https://www.pappers.fr/recherche?q=";
+        $societeCom="https://www.societe.com/societe/";
+        $pagesJaunes="https://www.pagesjaunes.fr/siret/";
+
         try{
             if(!isset($this->companyCollection->currentCompany)){
                 $this->companyCollection->currentCompany=[];
                 throw new Exception('Les données de l\'entreprise sont invalides, l\'entreprise n\'a pas été trouvéepas été récupérée depsui bitrix');
-           
             }
             if(empty($siret=$this->companyCollection->currentCompany['SIRET']))
                 throw new Exception('Le SIRET de l\'entreprise est invalide :'.$siret);
             $siren=$this->companyCollection->currentCompany['SIREN']??=substr($siret, 0, 9);
-
-            $bodacc="https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&sort=dateparution&refine.familleavis_lib=Procédures+collectives&q=";
-            $pappers="https://www.pappers.fr/recherche?q=";
-            $societeCom="https://www.societe.com/societe/";
-            $pagesJaunes="https://www.pagesjaunes.fr/siret/";
             
             $requisite=$this->companyCollection->currentCompany['requisite']??[];
+            
             $this->companyCollection->currentCompany['pappersUrl']=!empty($requisite[$this->fields['bitrix']["pappersUrl_mention"]??''])?$requisite[$this->fields['bitrix']["pappersUrl_mention"]]:$pappers.$siret;
             $this->companyCollection->currentCompany['annuaireUrl'] ='https://annuaire-entreprises.data.gouv.fr/etablissement/'.$siret;
             $this->companyCollection->currentCompany['pagesJaunesUrl']=$pagesJaunes.$siret;
@@ -486,6 +454,7 @@ public function updateCompanyToBitrix(array $company=[]){
                 $annuaire->dirigeant=$dirigeant->nom.' '.$dirigeant->prenoms;
             $annuaire->matching_etablissements[]=$annuaire->siege;
             $sirets=[];
+
             foreach($annuaire->matching_etablissements as $key =>$etablissement){
                 $annuaire->matching_etablissements[$key]->forme_juridique??=$this->getCategoryLabel($annuaire->nature_juridique??'');
                 $annuaire->matching_etablissements[$key]->nom_complet??=$annuaire->nom_complet;
@@ -680,16 +649,10 @@ public function updateCompanyToBitrix(array $company=[]){
 
     public function getCompanyById($company):array{
         
-        $company=$this->B24
-        ->core
-        ->call('crm.company.get', 
+        return $this->companyCollection->currentCompany=$this->b24Request('crm.company.get', 
         ['ID'=>$company["id"],
         'select'=>['*']
-        ])
-        ->getResponseData()
-        ->getResult();
-        return $this->companyCollection->currentCompany=$company;
-        
+        ]);
     }
 
     public function getCompanyContacts(){
@@ -751,16 +714,6 @@ public function updateCompanyToBitrix(array $company=[]){
         return $this;
     }
 
-    public function processCompanyData($data) {
-        // TO DO: implement data processing logic here
-        return $data;
-    }
-
-    public function searchCompany($query) {
-        // TO DO: implement search logic here
-        // You can use the fetchCompanyData method to retrieve data from the API
-        // and then process the data using the processCompanyData method
-    }
   
 }
 

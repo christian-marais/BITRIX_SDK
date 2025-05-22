@@ -73,8 +73,12 @@
         $baseUrl=$domain.$request?->server->get('SCRIPT_NAME');
         $companyId=$company["requisite"]["ENTITY_ID"]??"";
     ?>
-    <?php include dirname(__FILE__,2) . '/snippets/buttonsBar.php'; ?>
+    
+   
     <div class="container py-4">
+    <div class="card-header mb-4"> 
+        <?php include dirname(__FILE__,2) . '/snippets/buttonsBar.php'; ?>
+    </div>
     <?php if (!empty($records=$company["bodaccRecords"])): ?>
         <div class="p-3 mb-2 bg-danger text-white"><i class="bi bi-exclamation-triangle-fill"></i> <a href="#bodaccRecords" style="all:unset;cursor:pointer;">Alerte : Des procédures collectives sont en cours sur des établissements de l'entreprise!</a></div>
     <?php endif;?>

@@ -73,10 +73,27 @@
             border-radius: 4px;
             font-size: 0.9rem;
         }
+        .company-badge {
+            background-color:rgb(62, 136, 201);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body class="py-4">
 <div class="container">
+    <?php global $request;if($back=$request->server->get('HTTP_REFERER')): ?>
+    <div class="btn btn-info"><a class="text-decoration-none text-white" type="button" style="font-weight:bold;"href="<?=$back?>"><i class="bi bi-arrow-left"></i> Retour</a></div>
+    <?php endif; ?>
+    <a type="button" id="search" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL?>/company/">
+        <i class="bi bi-search me-2" ></i> Société
+    </a>
+    <a type="button" id="parameter" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL.'/webhook'?>">
+        <i class="bi bi-gear " ></i> Paramètres
+    </a>
+    <hr>
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
             <?php if (empty($bodaccAlerts)): ?>
@@ -95,20 +112,26 @@
                         <div class="info-header d-flex justify-content-between align-items-center">
                             <h2 class="h5 mb-0">
                                 <i class="bi bi-file-text me-2"></i>
-                                <?php echo htmlspecialchars($record["TITLE"] ?? 'Alerte BODACC'); ?>
+                                <?php echo htmlspecialchars($record["TITLE"] ?? ''); ?>
+                                <span class="company-badge">
+                                <i class="bi bi-3d me-1"></i>
+                                <?php echo "N° <a class='text-decoration-none text-white' href='".B24_DOMAIN."/crm/company/details/".htmlspecialchars($record["COMPANY_ID"])."/'>".htmlspecialchars($record["COMPANY_ID"]); ?>
+                                </a>
+                            </span>
                             </h2>
-                            <span class="date-badge">
-                                <i class="bi bi-calendar-event me-1"></i>
+                            
+                             <span class="date-badge">
+                                <i class="bi bi-calendar-event me-1"></i> Parue le
                                 <?php echo htmlspecialchars($record["dateparution"]); ?>
                             </span>
                         </div>
                         <div class="info-content">
                             <div class="info-row">
                                 <div class="info-label">
-                                    <i class="bi bi-building me-2"></i>Registre
+                                    <i class="bi bi-building me-2"></i>Siren
                                 </div>
                                 <div class="info-value">
-                                    <?php echo htmlspecialchars($record["registre"]. ' RCS '.$record["tribunal"]); ?>
+                                    <?php echo htmlspecialchars($record["siren"]); ?>
                                 </div>
                             </div>
                             <div class="info-row">
@@ -116,7 +139,7 @@
                                     <i class="bi bi-card-text me-2"></i>Description
                                 </div>
                                 <div class="info-value">
-                                    <?php echo htmlspecialchars($record["description"]); ?>
+                                    <?php echo htmlspecialchars($record["contenu"]); ?>
                                 </div>
                             </div>
                             <div class="info-row">
@@ -133,6 +156,14 @@
                                 </div>
                                 <div class="info-value">
                                     <?php echo htmlspecialchars($record["datejugement"]); ?>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-label">
+                                    <i class="bi bi-calendar2-check me-2"></i>Date du parution
+                                </div>
+                                <div class="info-value">
+                                    <?php echo htmlspecialchars($record["dateparution"]); ?>
                                 </div>
                             </div>
                             <div class="text-end mt-3">

@@ -11,6 +11,17 @@
 </head>
 <body>
     <div class="container-fluid px-4 py-4">
+       
+        <div class="card-header mb-4"> 
+            <?php global $request;if($back=$request->server->get('HTTP_REFERER')): ?>
+            <div class="btn btn-info"><a class="text-decoration-none text-white" type="button" style="font-weight:bold;"href="<?=$back?>"><i class="bi bi-arrow-left"></i> Retour</a></div>
+            <?php endif; ?>
+            <div class="btn btn-primary"><a type="button" id="bodacc" class="text-decoration-none text-white" href="<?=dirname(FULL_BASE_URL,2).'/crm.company.insee/index.php/company/'?>">
+                <i class="bi bi-house " ></i> HOME
+            </a></div>
+            <hr>
+        </div>
+    
         <div class="row">
             <div class="col-12">
                 <div class="card shadow-sm">

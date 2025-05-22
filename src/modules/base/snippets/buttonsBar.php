@@ -1,19 +1,7 @@
-<?php global $request;if($back=$request->server->get('HTTP_REFERER')): ?>
-<div class="btn btn-info"><a class="text-decoration-none text-white" type="button" style="font-weight:bold;"href="<?=$back?>"><i class="bi bi-arrow-left"></i> Retour</a></div>
-<?php endif; ?>
-<a type="button" id="search" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL?>/company/">
-    <i class="bi bi-search me-2" ></i> Société
-</a>
-<a type="button" id="parameter" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL.'/webhook'?>">
-    <i class="bi bi-gear " ></i> PARAMETRES
-</a>
-<hr>
 <div class="card">
-    <?php if(true||!empty($company['SIREN']) && $display=true): ?>
-        <div class="card-body">
-        
+    <div class="card-body">
+        <?php if(!empty($company['SIREN']) && $display=true): ?>
             <div class="card-title d-flex justify-content-end " >
-                
                 <a type="button" id="mail" class="btn btn-info mx-2" href="<?=dirname(FULL_BASE_URL,2)?>/crm.mail.list/index.php">
                     <i class="bi bi-envelope-fill" style="margin-right: 5px;"></i>MAIL
                 </a>
@@ -33,12 +21,12 @@
                 <?php endif; ?>
                 <?php if(!empty($company['annuaireUrl'])): ?>
                     <a class="text-white btn btn-secondary mx-2" type="button" href="<?php echo htmlspecialchars($company['annuaireUrl']); ?>" target="_blank">
-                        <i class="bi bi-buildings"></i> ANNUAIRE ENTREPRISE
+                        <i class="bi bi-buildings" ></i> ANNUAIRE ENTREPRISE
                     </a>
                 <?php endif; ?>
                 <?php if(!empty($company['pagesJaunesUrl'])): ?>
                     <a class="text-white btn btn-warning mx-2" type="button" href="<?php echo htmlspecialchars($company['pagesJaunesUrl']); ?>" target="_blank">
-                        <i class="bi bi-building-fill"></i> PAGES JAUNES
+                        <i class="bi bi-building-fill" ></i> PAGES JAUNES
                     </a>
                 <?php endif;?>
                 <?php if(!empty($company['societe.comUrl'])): ?>
@@ -175,7 +163,7 @@
             });
             </script>
         <?php else :?>  
-            <!-- <iframe height="100vh" width="100%" id="iframe"src="templateblank.php" style="width: 100%; height: 100vh; border: none;"></iframe> -->
+            <iframe height="100vh" width="100%" id="iframe"src="templateblank.php" style="width: 100%; height: 100vh; border: none;"></iframe>
         <?php endif; ?>
     </div>
 </div>

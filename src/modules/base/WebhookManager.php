@@ -57,7 +57,7 @@ class WebhookManager extends ServiceBuilderFactory
         $this->addSafeRoutes([$redirecToRoute]);
         $server=$this->webhookCollection->request->server;  
         switch(true){
-            case !in_array($server->get("PATH_INFO"),$this->webhookCollection->safeRoutes) && !$this->hasScope():
+            case !in_array($server->get("PATH_INFO")??'',$this->webhookCollection->safeRoutes) && !$this->hasScope():
                 if($redirecToRoute){
                     _error_log("processing firewall... redirecting to specified route : $redirecToRoute");
                    echo  '<div style="display:none;">'.new RedirectResponse('//'.$server->get("HTTP_HOST").$server->get("SCRIPT_NAME").$redirecToRoute,302).'</div>';
@@ -95,7 +95,7 @@ class WebhookManager extends ServiceBuilderFactory
     public function setB24(){
         _error_log("Starting setB24");
         $server=$this->webhookCollection->request->server; 
-        $isApiRoute= str_contains($server->get("PATH_INFO"),"api") || str_contains($server->get("REQUEST_URI"),"api"); 
+        $isApiRoute= str_contains($server->get("PATH_INFO")??'',"api") || str_contains($server->get("REQUEST_URI")??'',"api"); 
         if(defined('$_SESSION') && is_bool($_SESSION["NS"]) && $_SESSION["NS"]!==true && !$isApiRoute && defined("IS_B24_IMPLEMENTED") && IS_B24_IMPLEMENTED){
             if(!empty($_SERVER['DOCUMENT_ROOT'])&& file_exists($file=$_SERVER['DOCUMENT_ROOT']."/bitrix/modules/main/include/prolog_before.php"))
             $_SESSION["NS"]=true;
@@ -326,6 +326,8 @@ class WebhookManager extends ServiceBuilderFactory
     
     private function log($e,$message){
         if (defined('DEBUG') && DEBUG){
+            ini_set("error_reporting",E_ALL);
+            ini_set("display_error",1);
             echo'<pre>';
             var_dump($e);
             echo'</pre>';

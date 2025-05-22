@@ -81,11 +81,22 @@ class WebController
                     'siren'=>$siren
                 ];
                 $sirens[]=$siren;
+                $societies[$siren]=[
+                    'COMPANY_ID'=>$comp->__get('ID'),
+                    'TITLE'=>$comp->__get('TITLE'),
+                    'siren'=>$siren
+                ];
             }
             $start=count($companies);
         }while($start<$company->countByFilter($filter));
         error_log('Processing bodaccAlertsCompany...');
         $company=$this->component->getBodaccAlerts($sirens,$request,$date)->getCompany();
+        foreach($company['bodaccAlerts'] as $siren =>$companyWithAlerts){
+            if(!empty($societies[$siren]))
+            {
+                $company['bodaccAlerts'][$siren] = array_merge($company['bodaccAlerts'][$siren]??[],$societies[$siren]??[]);
+            }
+        }
         $bodaccAlerts=$company["bodaccAlerts"]??[];
         if(!empty($bodaccAlerts)) {
             ob_start();

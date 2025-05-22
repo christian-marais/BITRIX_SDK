@@ -2,7 +2,8 @@
   "require": {
       "bitrix24/b24phpsdk": "^1.2",
       "symfony/http-foundation": "^7.2",
-      "symfony/routing": "^7.2"
+      "symfony/routing": "^7.2",
+    "symfony/dotenv": "^7.2"
   },
   "autoload": {
       "psr-4": {

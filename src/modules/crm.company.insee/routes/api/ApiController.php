@@ -12,6 +12,7 @@ use NS2B\SDK\MODULES\CRM\COMPANY\INSEE\NextcloudService;
 class ApiController
 {   
     private WebhookManager $webhookManager;
+    private $B24;
 
     public function __construct(
         private CompanyComponent $companyComponent=new CompanyComponent(),
@@ -28,9 +29,7 @@ class ApiController
             extract($params);
             $requestBody=json_decode($request->getContent(), true);
             error_log('Processing saveContact...');
-            $result=$B24->core->call('crm.contact.add',[
-                "fields"=>$requestBody
-            ])->getResponseData()->getResult();
+            $result=$this->b24Request($B24,'crm.contact.add',["fields"=>$requestBody]);
             return new JsonResponse( 
                 [
                     'status' => 'success',
@@ -47,7 +46,10 @@ class ApiController
         }
     }
 
-    
+    private function b24Request($B24, string $method, array $params){
+        return $B24->core->call($method, $params)->getResponseData()->getResult();
+    }
+
     public function getContacts(Request $request,...$params): Response
     {
         error_log('Starting getContacts...');
@@ -55,9 +57,7 @@ class ApiController
             extract($params);
             $requestBody=json_decode($request->getContent(), true);
             error_log('Processing getContacts...');
-            $result=$B24->core->call('crm.contact.list',[
-                "filter"=>$requestBody
-            ])->getResponseData()->getResult();
+            $result=$this->b24Request($B24, 'crm.contact.list', ["filter"=>$requestBody]);
             if(empty($result[0])){
                 throw new \Exception('Contacts not found');
             }
@@ -379,10 +379,6 @@ class ApiController
         try {
             $database=new DatabaseSQLite('crmcompanyinsee.db');
             $data = json_decode($request->getContent(), true);
-            
-            // Logique pour sauvegarder une entreprise dans la base de données
-            // TODO: Implémenter la logique de sauvegarde
-
             return new JsonResponse([
                 'status' => 'success',
                 'message' => 'Entreprise sauvegardée avec succès'
@@ -430,13 +426,10 @@ class ApiController
             }
             foreach($posts as $post)
             {
-                
                 $batch[$post["name"]]=$post["method"]."?".http_build_query($post["params"]);
             }
 
-            $result=$B24->core->call('batch',[
-                "cmd"=>$batch
-            ])->getResponseData()->getResult()["result"];
+            $result=$this->b24Request($B24,'batch',["cmd"=>$batch])["result"];
             $ids=[];
             foreach($result as $key => $value) {
                 if(!empty($value[0]["ID"])){

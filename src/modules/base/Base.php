@@ -26,6 +26,8 @@ abstract class Base{
     private $HttpOption;
 
     public function __construct($webhook=null) {
+        $this->getEnv(__DIR__);
+        $this->getEnv('/home/bitrix');
         $database = new Database('database');
         $this->webhookManager = new WebhookManager($database);
         $this->webhookManager->requiredScopes($this->requiredScopes);
@@ -40,6 +42,13 @@ abstract class Base{
     
     }
 
+    private function getEnv($dir){
+        if(!file_exists($file=$dir.'/.env.ns2b.settings')){
+            return $this;
+        }
+        $dotenv= new \Symfony\Component\Dotenv\Dotenv();
+        $dotenv->load($file);
+    }
     public function getHttpOption(){
         return $this->HttpOption;
     }

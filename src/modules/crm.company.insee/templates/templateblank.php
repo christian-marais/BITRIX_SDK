@@ -105,7 +105,15 @@
     </style>
 </head>
 <body> 
+    
     <div class="search-container mb-4">
+        <?php global $request;if($back=$request->server->get('HTTP_REFERER')): ?>
+        <div class="btn btn-info"><a class="text-decoration-none text-white" type="button" style="font-weight:bold;"href="<?=$back?>"><i class="bi bi-arrow-left"></i> Retour</a></div>
+        <?php endif; ?>
+        <a type="button" id="parameter" class="text-white btn btn-primary mx-2" href="<?=FULL_BASE_URL.'/webhook'?>">
+            <i class="bi bi-gear " ></i> Paramètres
+        </a>
+        <hr>
         <div class="container">
             <h1 class="search-title text-center">Annuaire d'Entreprises</h1>
             <div class="row justify-content-center">
@@ -224,7 +232,7 @@
                                 }
                             }
                         }
-                        const id=<?= $company["ID"];?>'';
+                        const id=<?= $company["ID"]??null;?>'';
                         
                         if(id){
                             sirets.map(siret => {
@@ -410,27 +418,13 @@
                                
                             });
                             const currentRequestKey = Array.from(currentSirets).join(',');
-
-                            // Managing active controllers
-                            // for (const requestKey in activeControllers) {
-                            //     if (requestKey !== currentRequestKey) {
-                            //         // activeControllers[requestKey].abort();
-                            //     }
-                            // }
-                            // setTimeout(() => {
                             let sirets=[]
                             btns=document.querySelectorAll('.addCompany')
                             btns.forEach((element) => {
                                 sirets.push(element.getAttribute('data-siret'))
-                                // element.addEventListener('click', function() {
-                                //     addCompanyToBitrix(this.getAttribute('data-siret'));
-                                // });
                             });
                             showCompany(sirets);
                             showInsee(sirets);
-                            // },1000)
-
-                           
                         });
                     }
                 });

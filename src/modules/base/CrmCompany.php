@@ -78,7 +78,14 @@ abstract class CrmCompany extends Base{
             'pappersUrl_mention'=>'UF_CRM_1740987515'
         ]
     ];
-    
+    public function __construct(){
+        parent::__construct();
+        foreach($this->fields["bitrix"] as $key => $value){
+            if(!empty($value = $_ENV[$key]??[])){
+                $this->fields["bitrix"][$key] = $value;
+            }
+        }
+    }
     protected $company = [];
 
     private static function getCompanyId() {
